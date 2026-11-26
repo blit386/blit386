@@ -64,7 +64,7 @@ export class AudioMeter {
     /** Readout text built from the counters below; rebuilt only when one of them changes. */
     #cachedText = '';
 
-    /** Counters {@link #cachedText} was built from; `-1` forces the first build. */
+    /** Counters text was built from; `-1` forces the first build. */
     #cachedActiveVoices = -1;
 
     #cachedTotalVoices = -1;
@@ -238,8 +238,8 @@ export class AudioMeter {
 }
 
 /**
- * Computes the left edge X of the `busIndex`-th bus bar, reusing {@link gridRowWidth}'s
- * fixed-count column arithmetic instead of an adaptive grid.
+ * Computes the left edge X of the `busIndex`-th bus bar: one bar width plus gap per step, the same
+ * pitch {@link gridRowWidth} sums when the readout is placed after the bars.
  *
  * @param rect - Screen-space meter band.
  * @param busIndex - Index into {@link AUDIO_METER_BUSES}.

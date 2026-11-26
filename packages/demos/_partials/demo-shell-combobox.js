@@ -17,7 +17,7 @@ function fuzzyMatch(query, text) {
     const q = query.toLowerCase();
     const t = text.toLowerCase();
 
-    // Empty query matches everything (used to show the full list when closed-open).
+    // Empty query matches everything (a pristine field shows the full list).
     if (q.length === 0) {
         return { score: 0, indices: [] };
     }
@@ -165,6 +165,7 @@ export function buildCombobox(demos, currentIndex) {
 
     /** @type {{ demo: {slug: string, navLabel: string}, score: number, indices: number[] }[]} */
     let filtered = [];
+
     let activeIndex = -1;
     let isOpen = false;
 

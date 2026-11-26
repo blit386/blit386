@@ -1,4 +1,4 @@
-/** Export a Vite game as one offline HTML file. */
+/** `blit bundle --single` - export a Vite game as one HTML file, offline unless `--engine cdn` is given. */
 // cspell:ignore mrmime
 
 import {
@@ -81,7 +81,10 @@ function isMissing(error: unknown): boolean {
     return (error as NodeJS.ErrnoException).code === 'ENOENT';
 }
 
-/** Include public files because game code can construct their paths at runtime. */
+/**
+ * Every file under `public/` as a data URL keyed by its site path (`/sprites/hero.png`). All of them are included
+ * because game code can construct their paths at runtime. Throws on a symlink anywhere in the tree.
+ */
 function readPublicFiles(publicDir: string | false, lookup: MimeModule['lookup']): AssetMap {
     const assets: AssetMap = new Map();
 
@@ -486,6 +489,7 @@ function installedEngine(root: string): { url: string; bytes: number } {
     return { url: `${ENGINE_CDN_PREFIX}${version}${ENGINE_CDN_FILE}`, bytes };
 }
 
+/** CLI entry point. Reports failure by throwing an `Error` with a user-facing message, which `cli.ts` prints. */
 export async function runBundle(args: string[]): Promise<void> {
     if (args.includes('--help') || args.includes('-h')) {
         process.stdout.write(HELP);

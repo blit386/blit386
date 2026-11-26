@@ -12,8 +12,10 @@ interface PadState {
     isConnected?: boolean;
     buttons?: number[];
     pressed?: number[];
+
     /** Explicit `pressed` flag per button index, overriding the derived one (browsers set it themselves). */
     pressedFlags?: Record<number, boolean>;
+
     axes?: number[];
 }
 

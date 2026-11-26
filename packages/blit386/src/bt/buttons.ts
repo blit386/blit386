@@ -11,7 +11,7 @@ import {
     resetKeyboardFaceButtonMaps,
     setKeyboardFaceButtonKeys,
 } from '../input/keyboardRuntimeMaps';
-import { POINTER_BUTTON_CODES } from '../input/PointerInput';
+import { POINTER_BUTTON_CODES } from '../input/pointerSlot';
 import { pointerClock } from './internal';
 
 /**
@@ -87,6 +87,7 @@ export const buttons = {
 
             const isKeyboardDown =
                 BTAPI.instance.getKeyboard()?.isButtonDown(faceButtonKeys(faceButton, player) ?? []) ?? false;
+
             const isGamepadDown = BTAPI.instance.getGamepad()?.isButtonDown(faceButton, player) ?? false;
 
             if (isKeyboardDown || isGamepadDown) {

@@ -426,7 +426,7 @@ export interface HardwareSettings {
 
     /**
      * Maximum visible palette grid rows in the overlay footer viewport. When unset,
-     * all rows are shown (current behavior). When set, the bottom band height uses
+     * all rows are shown. When set, the bottom band height uses
      * this row count rather than the full palette row count; values are clamped to
      * at least `1` and at most the total row count.
      */

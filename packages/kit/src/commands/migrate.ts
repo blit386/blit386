@@ -23,7 +23,7 @@ import { MIGRATIONS, migrationsThrough } from '../migrations/registry';
 import { color, gitNag, ui } from '../messages';
 import { confirm } from '../prompt';
 
-/** Source file extensions we rewrite. */
+/** Source file extensions the codemods rewrite. */
 const CODE_EXT = new Set(['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx']);
 
 /** Directories never worth scanning. */
@@ -82,7 +82,8 @@ export interface MigrateSummary {
      * - `skipped-engine`: installed blit386 is older than 1.4.0
      * - `missing-config`: no vite.config.* at the project root
      * - `unsupported`: config shape was too unusual to rewrite safely
-     * - `none`: hot reload was not considered (no migrations path)
+     * - `none`: hot reload was not considered (the `emptySummary` default; `migrateProject` always reports a real
+     *   status)
      */
     hotReload: HotReloadViteStatus | 'none';
 
@@ -141,7 +142,6 @@ function formatHit(hit: RenameHit): string {
     return [`  ${color.red(`- ${hit.before.trim()}`)}`, `  ${color.green(`+ ${hit.after.trim()}`)}`].join('\n');
 }
 
-/** Empty summary helper. */
 function emptySummary(hotReload: MigrateSummary['hotReload'] = 'none'): MigrateSummary {
     return {
         filesChanged: 0,
@@ -156,7 +156,7 @@ function emptySummary(hotReload: MigrateSummary['hotReload'] = 'none'): MigrateS
 /**
  * Decide whether this project should get the Vite hot-reload plugin rewrite.
  *
- * When blit386 is not installed yet, we still offer the rewrite (scaffold / migrate before install). When it is
+ * When blit386 is not installed yet, the rewrite is still offered (scaffold / migrate before install). When it is
  * installed below 1.4.0, skip - `blit386/vite` does not exist on older engines.
  */
 function shouldOfferHotReload(installed: string | null): boolean {

@@ -84,7 +84,7 @@ const HUD_HEIGHT = 22;
 // applyTheme() in init(), so only the demo's own scene colors remain.
 const C_BALL_OUTLINE = 1; // outline drawn around any grabbed ball
 
-// Tint for the ball under the mouse cursor when no slot is grabbing it.
+// Ring color for the ball under the mouse cursor when no slot is grabbing it.
 const C_BALL_HIGHLIGHT = 2;
 
 // Three balls, each its own color so it is easy to track which is which.

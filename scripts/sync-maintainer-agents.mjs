@@ -27,6 +27,7 @@
  *   node scripts/sync-maintainer-agents.mjs            # write files (run by hand; pre-push runs --check)
  *   node scripts/sync-maintainer-agents.mjs --check    # report drift, write nothing, exit 1 (CI)
  */
+
 import {
     existsSync,
     lstatSync,
@@ -156,7 +157,7 @@ export function planMaintainerEntries(generatedFiles, readKitHookContents) {
 }
 
 /**
- * Project-relative paths under `dirRel` (trailing slash) that are not in `expected`.
+ * Project-relative paths under `ownedDirs` or listed in `ownedExact` that are not in `expected`.
  *
  * @param {string[]} existingRelPaths Paths currently on disk under the owned surface.
  * @param {Set<string>} expected Paths the plan will install.
@@ -332,6 +333,7 @@ export function syncMaintainerAgents({ generated, isCheck, root = ROOT, readKit 
     const plan = planMaintainerEntries(generated, readKit);
     const expected = new Set(plan.map((entry) => entry.path));
     const orphans = findOrphanMaintainerPaths(listOwnedSurfacePaths(root), expected, OWNED_DIRS, OWNED_EXACT_FILES);
+
     /** @type {string[]} */
     const drifted = [];
 

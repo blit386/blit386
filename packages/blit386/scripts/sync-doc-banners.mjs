@@ -19,6 +19,7 @@
  *   node scripts/sync-doc-banners.mjs            # write banners (local + pre-commit)
  *   node scripts/sync-doc-banners.mjs --check    # report drift, write nothing, exit 1 (CI)
  */
+
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

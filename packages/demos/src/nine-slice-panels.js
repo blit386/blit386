@@ -99,8 +99,8 @@ import { applyTheme, ui, UI_ANCHORS } from './shared/ui.js';
 /** @typedef {import('blit386').Palette} Palette */
 /** @typedef {import('blit386').SpriteSheet} SpriteSheet */
 
-// Display size: twice the usual 320x200 each way, which leaves room for two columns of
-// sections.
+// Display size: 640x400, bigger than the engine's default 320x240, which leaves room for
+// two columns of sections.
 const DISPLAY_W = 640;
 const DISPLAY_H = 400;
 
@@ -605,8 +605,8 @@ class Demo {
             BT.drawNineSlice(this.bar, rect);
         }
 
-        // The live bar swings between 20 and 200 pixels wide. 20 is the smallest that
-        // still shows both caps in full (each is 5 pixels wide).
+        // The live bar swings between 20 and 200 pixels wide. Even at 20 both caps show
+        // in full (each is 5 pixels wide, so the two need only 10).
         const swing = (Math.sin(BT.ticks / 40) + 1) / 2;
         this.liveBarRect.width = Math.round(20 + swing * 180);
         BT.drawNineSlice(this.bar, this.liveBarRect);

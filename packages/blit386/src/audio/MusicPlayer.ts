@@ -124,7 +124,7 @@ export class MusicPlayer {
      *
      * Crossfade timing is derived from `options.fadeMs` and `options.overlap` and anchored to
      * `AudioContext.currentTime`: the outgoing fade-out always starts immediately; the incoming
-     * fade-in starts `fadeMs * (1 - overlap)` seconds later, so `overlap = 1` fades both at once,
+     * fade-in starts `fadeMs * (1 - overlap)` milliseconds later, so `overlap = 1` fades both at once,
      * `overlap = 0` starts the fade-in exactly as the fade-out ends, and `overlap = -1` leaves a
      * silence gap of `fadeMs` between them.
      *
@@ -146,7 +146,7 @@ export class MusicPlayer {
         // overlap only describes the offset between an outgoing and incoming fade - with no
         // current voice to crossfade against, there is nothing to offset from, so the new track
         // always starts at now regardless of overlap.
-        const fadeInStart = this.current !== null ? now + fadeSeconds * (1 - overlap) : now;
+        const fadeInStart = this.current === null ? now : now + fadeSeconds * (1 - overlap);
 
         this.fadeOutCurrent(now, fadeSeconds, options.easeOut ?? DEFAULT_EASING);
 
@@ -279,6 +279,7 @@ export class MusicPlayer {
         const source = this.context.createBufferSource();
 
         source.buffer = buffer;
+
         applyLoopOptions(source, options);
 
         source.connect(gain);
@@ -295,6 +296,7 @@ export class MusicPlayer {
 
         source.onended = () => {
             source.disconnect();
+
             this.handleVoiceSourceEnded(voice);
         };
 
@@ -314,12 +316,14 @@ export class MusicPlayer {
     private fadeOutCurrent(now: number, fadeSeconds: number, easeOut: EasingFunction): void {
         if (this.previous !== null) {
             this.forceStopVoice(this.previous);
+
             this.previous = null;
         }
 
         if (this.current !== null) {
             this.previous = this.current;
             this.current = null;
+
             this.scheduleFadeOutAndStop(this.previous, now, fadeSeconds, easeOut);
         }
     }
@@ -490,9 +494,8 @@ function sanitizeLoopRegion(options: MusicPlayOptions, duration: number): MusicP
  * playback state changes, so an invalid call to {@link MusicPlayer#play} never leaves the
  * player mid-mutated.
  *
- * This is the one deliberate throw in the music playback path - clearly-invalid programmer
- * input, the same way {@link AudioClip.synth} and `VoicePool` validate their own
- * boundary values.
+ * Like {@link validateFinite}, it throws only on clearly-invalid programmer input, the same
+ * way {@link AudioClip.synth} and `VoicePool` validate their own boundary values.
  *
  * @param options - Playback options; see {@link MusicPlayOptions}.
  * @param duration - Duration in seconds of the buffer about to be played.

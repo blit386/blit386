@@ -8,12 +8,13 @@
  * - `PreToolUse` (Bash): refuse `git commit` and `gh pr create` (exit 2) unless every changed tracked path - in the
  *   index and in the working tree, so `-a` and pathspec commits are covered without parsing them - is byte-identical
  *   to what both reviews last saw. A commit is measured against HEAD; a PR against the merge base with `origin/<base>`
- *   (`--base`, else main), where what HEAD changes counts too. An edit after a review therefore needs a fresh review. Generated
- *   paths are exempt.
+ *   (`--base`, else the branch's `gh-merge-base`, else the remote default `origin/HEAD` records), where what HEAD
+ *   changes counts too. An edit after a review therefore needs a fresh review. Generated paths are exempt.
  *
  * A missing or stale marker blocks; any internal error fails open with a stderr note, so a gate bug cannot block every
  * commit. Policy: `.claude/rules/commit-review-gate.md`.
  */
+
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -30,6 +31,7 @@ const REVIEWS = [
         skills: ['ponytail:ponytail-review', 'ponytail-review'],
     },
 ];
+
 const MARKER_DIR = 'review-gate';
 const BLOCK = 2;
 const ALLOW = 0;
@@ -46,11 +48,14 @@ const API_HISTORY_JSON = 'packages/blit386/docs/_api-history.json';
 const BOUNDARY = Symbol('boundary');
 const SUBSHELL_OPEN = Symbol('subshell open');
 const SUBSHELL_CLOSE = Symbol('subshell close');
+
 /** Pushed last by {@link shellTokens} when a `$(` opened inside a heredoc body never closes: the rest cannot be trusted. */
 const UNREADABLE = Symbol('unreadable');
 const UNREADABLE_KIND = 'command';
+
 /** An unquoted redirection operator; the word after it is its operand, not a command argument. */
 const REDIRECT = Symbol('redirect');
+
 const FD_NUMBER = /^\d+$/u;
 const BOUNDARY_TOKENS = new Map([
     [';', BOUNDARY],
@@ -60,13 +65,16 @@ const BOUNDARY_TOKENS = new Map([
     ['(', SUBSHELL_OPEN],
     [')', SUBSHELL_CLOSE],
 ]);
+
 /** Stands in for the unknown output of a `$(...)` among its outer command's words. */
 const SUBSTITUTION_WORD = '$(...)';
 const SINGLE_QUOTE = "'";
 const DOUBLE_QUOTE = '"';
+
 /** Words skipped in front of a command: option-less wrappers. `VAR=x` assignments are skipped too. */
 const COMMAND_WRAPPERS = new Set(['rtk', 'env', 'command', 'exec', 'nohup', 'time', 'xargs', 'sudo']);
 const ASSIGNMENT = /^[A-Za-z_]\w*=/u;
+
 /** Git global options whose value is the next word (`git.c`); `-C` also moves the directory. */
 const DIR_OPTION = '-C';
 const OPERAND_OPTIONS = new Set([
@@ -79,9 +87,11 @@ const OPERAND_OPTIONS = new Set([
     '--super-prefix',
     '--attr-source',
 ]);
+
 /** `gh` options whose value is the next word and that may precede a subcommand. */
 const REPO_OPTIONS = new Set(['-R', '--repo']);
 const PR_CREATE_NAMES = new Set(['create', 'new']);
+
 /** `gh pr create` options that take a value (`gh pr create --help`), long and short. */
 const CREATE_VALUE_FLAGS = new Set([
     ...['--assignee', '--base', '--body', '--body-file', '--head', '--label', '--milestone', '--project'],
@@ -89,8 +99,10 @@ const CREATE_VALUE_FLAGS = new Set([
     ...REPO_OPTIONS,
     ...['-a', '-B', '-b', '-F', '-H', '-l', '-m', '-p', '-r', '-T', '-t'],
 ]);
+
 /** Git subcommands that change the checked-out branch, so a later `gh pr create` in the same command sees another one. */
 const BRANCH_SWITCHERS = new Set(['switch', 'checkout']);
+
 /** Ends a heredoc delimiter word: whitespace and the shell's operators. */
 const HEREDOC_DELIMITER_END = /[\s;&|()<>]/u;
 const SLASH_COMMAND = /^\s*\/([\w:-]+)/u;
@@ -134,6 +146,7 @@ function repoOf(cwd) {
 /** The working tree (tracked + untracked, `.gitignore` honored) as a tree SHA, built in a throwaway index. */
 function snapshotTree(repo) {
     mkdirSync(repo.markers, { recursive: true });
+
     const tempIndex = join(repo.markers, `index-${process.pid}`);
 
     try {
@@ -143,6 +156,7 @@ function snapshotTree(repo) {
         }
 
         const env = gitEnv({ GIT_INDEX_FILE: tempIndex });
+
         gitOut(repo.top, ['add', '-A'], env);
 
         return gitOut(repo.top, ['write-tree'], env);
@@ -157,10 +171,12 @@ function recordReview(payload) {
         payload.hook_event_name === 'UserPromptSubmit'
             ? SLASH_COMMAND.exec(payload.prompt ?? '')?.[1]
             : payload.tool_name === 'Skill' && payload.tool_input?.skill;
+
     const review = REVIEWS.find(({ skills }) => skills.includes(skill));
 
     if (review) {
         const repo = repoOf(payload.cwd ?? process.cwd());
+
         writeFileSync(join(repo.markers, review.marker), `${snapshotTree(repo)}\n`);
     }
 
@@ -171,6 +187,7 @@ function recordReview(payload) {
 function readHeredocDelimiter(command, from) {
     let j = from;
     const strip = command[j] === '-';
+
     j += strip ? 1 : 0;
 
     while (command[j] === ' ' || command[j] === '\t') {
@@ -186,8 +203,10 @@ function readHeredocDelimiter(command, from) {
         if (char === SINGLE_QUOTE || char === DOUBLE_QUOTE) {
             const close = command.indexOf(char, j + 1);
             const end = close < 0 ? command.length : close;
+
             live = false;
             delim += command.slice(j + 1, end);
+
             j = end + 1;
         } else if (char === '\\') {
             live = false;
@@ -225,11 +244,13 @@ function heredocBody(command, from, delim, strip, live) {
             const newline = command.indexOf('\n', start);
             return newline < 0 ? command.length : newline;
         };
+
         let lineEnd = lineEndOf(pos);
         let line = command.slice(pos, lineEnd);
 
         while (live && endsEscaped(line) && lineEnd < command.length) {
             const nextEnd = lineEndOf(lineEnd + 1);
+
             line = line.slice(0, -1) + command.slice(lineEnd + 1, nextEnd);
             lineEnd = nextEnd;
         }
@@ -261,14 +282,19 @@ function shellTokens(command) {
     let word = null;
     let quote = '';
     let comment = false;
+
     // `<<DELIM` seen, body not yet started (starts after the next newline) / body being skipped.
     const pendingHeredocs = [];
+
     let heredoc = null;
+
     // False once a quote or backslash contributed to the word: only a plain digit run before `>` is a file descriptor.
     let plainWord = true;
+
     const flush = () => {
         if (word !== null) {
             tokens.push(word);
+
             word = null;
         }
 
@@ -283,6 +309,7 @@ function shellTokens(command) {
             if (i >= heredoc.end) {
                 i = heredoc.resumeAt - 1;
                 heredoc = null;
+
                 continue;
             }
 
@@ -297,7 +324,7 @@ function shellTokens(command) {
         }
 
         if (comment) {
-            // A comment runs to the end of the line; bash runs nothing in it, so neither do we.
+            // A comment runs to the end of the line; bash runs nothing in it, so neither does the gate.
             if (char === '\n') {
                 comment = false;
             } else {
@@ -316,6 +343,7 @@ function shellTokens(command) {
             // `$(...)`, and the process substitutions `<(...)` / `>(...)`: each runs a command and is one word of the outer one.
             // The word being built (`rel` in `rel$(...)`) waits: the substitution's output is part of it, not a new word.
             tokens.push(SUBSHELL_OPEN);
+
             resume.push({
                 quote,
                 word,
@@ -325,10 +353,12 @@ function shellTokens(command) {
                 substitution: true,
                 arithmetic: false,
             });
+
             plainWord = true;
             word = null;
             quote = '';
             heredoc = null;
+
             i++;
         } else if (quote) {
             if (char === quote) {
@@ -345,12 +375,15 @@ function shellTokens(command) {
             comment = true;
         } else if (char === '<' && command[i + 1] === '<' && command[i + 2] !== '<' && !resume.at(-1)?.arithmetic) {
             flush();
+
             const doc = readHeredocDelimiter(command, i + 2);
+
             pendingHeredocs.push(doc);
             i = doc.next - 1;
         } else if (char === '&' && command[i + 1] === '>') {
             // `&>` and `&>>` redirect both streams; they are not a command separator followed by `>`.
             flush();
+
             i++;
 
             while (command[i + 1] === '>') {
@@ -362,6 +395,7 @@ function shellTokens(command) {
             // An unquoted redirection (`>`, `>>`, `2>&1`, `<`, `<<<`): its operand is a file or a word fed to stdin, not an
             // argument of the command, so the walker drops the word after the marker.
             word = plainWord && word !== null && FD_NUMBER.test(word) ? null : word;
+
             flush();
 
             while ('<>&|'.includes(command[i + 1] ?? ' ')) {
@@ -371,18 +405,22 @@ function shellTokens(command) {
             tokens.push(REDIRECT);
         } else if (BOUNDARY_TOKENS.has(char)) {
             const token = BOUNDARY_TOKENS.get(char);
+
             flush();
+
             tokens.push(token);
 
             if (char === '\n' && pendingHeredocs.length > 0) {
                 const doc = pendingHeredocs.shift();
                 const body = heredocBody(command, i + 1, doc.delim, doc.strip, doc.live);
+
                 heredoc = body && { ...body, live: doc.live };
             }
 
             if (token === SUBSHELL_OPEN) {
                 // `((` (as in `$((1<<3))`) opens arithmetic, and so does any paren inside one: there `<<` is a shift, not a heredoc.
                 const arithmetic = command[i - 1] === '(' || (resume.at(-1)?.arithmetic ?? false);
+
                 resume.push({
                     quote: '',
                     word: null,
@@ -391,9 +429,11 @@ function shellTokens(command) {
                     substitution: false,
                     arithmetic,
                 });
+
                 plainWord = true;
             } else if (token === SUBSHELL_CLOSE) {
                 const saved = resume.pop();
+
                 quote = saved?.quote ?? '';
                 plainWord = saved?.plainWord ?? true;
                 heredoc = saved?.heredoc ?? null;
@@ -423,6 +463,7 @@ function shellTokens(command) {
  */
 function createTargets(words) {
     const targets = {};
+
     const record = (flag, value) => {
         if (flag === '--base' || flag === '-B') {
             targets.base = value || undefined;
@@ -447,7 +488,9 @@ function createTargets(words) {
             for (let j = 1; j < word.length && word[j] !== '='; j++) {
                 if (CREATE_VALUE_FLAGS.has(`-${word[j]}`)) {
                     const rest = word.slice(j + 1);
+
                     record(`-${word[j]}`, rest === '' ? words[++i] : rest.replace(/^=/u, ''));
+
                     break;
                 }
             }
@@ -481,7 +524,7 @@ function ghPrCreate(args, dir) {
     return { dir, ...createTargets(args) };
 }
 
-/** `dir` moved by `target`; unchanged when the target is missing or comes from a `$(...)` we cannot evaluate. */
+/** `dir` moved by `target`; unchanged when the target is missing or comes from a `$(...)`, which is not evaluated. */
 function resolveDir(dir, target) {
     return !target || target.includes(SUBSTITUTION_WORD) ? dir : resolve(dir, expandHome(target));
 }
@@ -509,8 +552,8 @@ function gitSubcommand(args, startDir) {
 }
 
 /**
- * The directory and kind of every `git commit` and `gh pr create` in `command`, walking its simple commands in order from `cwd`: a `cd X` before a
- * commit moves it, and a subshell's `)` restores the directory it started in.
+ * The directory and kind of every `git commit` and `gh pr create` in `command`, walking its simple commands in order
+ * from `cwd`: a `cd X` before a commit moves it, and a subshell's `)` restores the directory it started in.
  */
 function gatedCommands(command, cwd) {
     const found = new Map();
@@ -566,10 +609,12 @@ function gatedCommands(command, cwd) {
             }
 
             skipOperand = false;
+
             continue;
         }
 
         const wasSkipping = skipOperand;
+
         skipOperand = token === REDIRECT;
 
         if (token === REDIRECT) {
@@ -578,6 +623,7 @@ function gatedCommands(command, cwd) {
 
         if (token === UNREADABLE) {
             found.set(UNREADABLE_KIND, { kind: UNREADABLE_KIND, dir, unreadable: true });
+
             continue;
         }
 
@@ -586,7 +632,9 @@ function gatedCommands(command, cwd) {
             outerWords.push(words);
             outerSkip.push(wasSkipping);
             outer.push([dir, dirUnknown]);
+
             words = [];
+
             continue;
         }
 
@@ -595,8 +643,10 @@ function gatedCommands(command, cwd) {
 
         if (token === SUBSHELL_CLOSE) {
             [dir, dirUnknown] = outer.pop() ?? [dir, dirUnknown];
+
             // The substitution's output sits in the word the tokenizer carries on, so the outer words just resume.
             words = outerWords.pop() ?? [];
+
             // A redirection whose operand is the substitution still owes that operand's word, which comes next.
             skipOperand = outerSkip.pop() ?? false;
         }
@@ -624,6 +674,7 @@ async function changedSourcePaths(top, base, forPullRequest) {
         gitOut(top, ['diff', '--name-only', '--no-renames', '-z', ...refs])
             .split('\0')
             .filter((path) => path && !generatedFiles.has(path) && !generatedDirs.some((dir) => path.startsWith(dir)));
+
     const staged = list('--cached', base);
     const committed = forPullRequest ? list(base, 'HEAD') : [];
 
@@ -639,6 +690,7 @@ function unreviewedPaths(repo, marker, { staged, committed, all }) {
     }
 
     const tree = readFileSync(markerFile, 'utf8').trim();
+
     // The index is compared only where it holds staged content; an empty pathspec would mean the whole tree.
     const checks = [
         ['HEAD', committed],
@@ -665,6 +717,7 @@ function defaultPrBase(top) {
 
         return result.status === 0 ? result.stdout.trim() : '';
     };
+
     const branch = read(['symbolic-ref', '--short', 'HEAD']);
     const configured = branch && read(['config', '--get', `branch.${branch}.gh-merge-base`]);
     const remoteHead = read(['symbolic-ref', '--short', `refs/remotes/${REMOTE}/HEAD`]).replace(`${REMOTE}/`, '');
@@ -729,12 +782,14 @@ async function staleReport(
 
     const base = isPullRequest ? gitOut(repo.top, ['merge-base', 'HEAD', `${REMOTE}/${prBaseName}`]) : 'HEAD';
     const paths = await changedSourcePaths(repo.top, base, isPullRequest);
+
     const stale =
         paths.all.length === 0
             ? []
             : REVIEWS.map((review) => ({ review, paths: unreviewedPaths(repo, review.marker, paths) })).filter(
                   (entry) => entry.paths.length > 0,
               );
+
     const lines = [];
 
     for (const { review, paths: unreviewed } of stale) {
@@ -763,7 +818,6 @@ async function staleReport(
 async function gateCommit(payload) {
     const sessionDir = payload.cwd ?? process.cwd();
     const lines = [];
-
     const kinds = new Set();
 
     for (const gated of gatedCommands(payload.tool_input?.command ?? '', sessionDir)) {
@@ -776,6 +830,7 @@ async function gateCommit(payload) {
             process.stderr.write(
                 `review-gate: internal error, allowing: ${error instanceof Error ? error.message : error}\n`,
             );
+
             continue;
         }
 
@@ -790,11 +845,14 @@ async function gateCommit(payload) {
     }
 
     const what = [...kinds].join(' and ');
+
     lines.unshift(`review-gate: this ${what} contains changes that were not reviewed in their current state.`);
+
     lines.push(
         `Run /review and /ponytail:ponytail-review on the current changes (after your last edit), then retry the ${what}.`,
         'An edit made after a review needs a fresh review. See .claude/rules/commit-review-gate.md.',
     );
+
     process.stderr.write(`${lines.join('\n')}\n`);
 
     return BLOCK;
@@ -802,9 +860,11 @@ async function gateCommit(payload) {
 
 try {
     const payload = JSON.parse(readFileSync(0, 'utf8'));
+
     process.exitCode = payload.hook_event_name === 'PreToolUse' ? await gateCommit(payload) : recordReview(payload);
 } catch (error) {
     // Fail open: a broken gate must not block every commit. A missing marker is not an error and still blocks.
     process.stderr.write(`review-gate: internal error, allowing: ${error instanceof Error ? error.message : error}\n`);
+
     process.exitCode = ALLOW;
 }

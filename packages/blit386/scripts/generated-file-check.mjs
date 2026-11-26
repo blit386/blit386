@@ -35,5 +35,6 @@ export function runCheck(outputFile, desired, regenerateScript) {
 
     console.error(`${relativeOutput} is out of date.`);
     console.error(`Run \`pnpm run ${regenerateScript}\` to regenerate it.`);
+
     process.exit(1);
 }

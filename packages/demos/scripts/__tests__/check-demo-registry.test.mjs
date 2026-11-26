@@ -3,6 +3,7 @@
  * CI / lint-staged gate, so it fails open if a rule stops actually rejecting bad input - these
  * tests exist to prove each rule still rejects what it claims to.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

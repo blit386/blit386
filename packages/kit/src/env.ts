@@ -123,7 +123,7 @@ export function pmRemoveArgs(pm: PackageManager, pkg: string): string[] {
 
 /**
  * On Windows, `npx blit` runs through `node_modules/.bin/blit.cmd`. cmd.exe re-reads a batch file by byte offset after
- * each command, so if the package manager rewrites the shim while we run, cmd resumes mid-file and prints garbage such
+ * each command, so if the package manager rewrites the shim while it runs, cmd resumes mid-file and prints garbage such
  * as "'ode' is not recognized". Returns a function that puts the original shim back, but only when it changed and the
  * script it launches still exists (so a genuinely moved entry point is never left stale).
  */
@@ -275,8 +275,8 @@ export function exceedsCaretRange(version: string, caretRange: string): boolean 
 /**
  * Read one string field of the `blit386` block in the kit's own package.json, or null if absent.
  *
- * The kit's package.json ships alongside this file in the npm package, so we locate it with
- * `kitRoot()` - the kit containing this code - rather than looking in `node_modules`.
+ * The kit's package.json ships alongside this file in the npm package, so it is located with
+ * `kitRoot()` - the kit containing this code - rather than looked up in `node_modules`.
  */
 function readKitBlit386Field(key: 'engineRange' | 'docsReviewedAt'): string | null {
     try {

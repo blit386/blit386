@@ -2,6 +2,7 @@
  * Unit tests for the shared CRT glitch constants: both glitch-type lists are built from the one
  * GLITCH_TYPE map, and every key has an on-screen label.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

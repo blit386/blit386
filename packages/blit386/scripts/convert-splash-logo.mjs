@@ -36,8 +36,8 @@ const PROJECT_ROOT = resolve(scriptDir, '..');
 const DEFAULT_INPUT = join(PROJECT_ROOT, 'assets/splash-logo.png');
 const OUTPUT_PATH = join(PROJECT_ROOT, 'src/splash/logoData.ts');
 
-// Must match src/splash/constants.ts. Duplicated because this is a plain .mjs
-// build script and cannot import from TypeScript source.
+// Manual-sync hazard: copies of RAMP_STEPS and RAMP_FIRST_SLOT in src/splash/constants.ts,
+// which points back here. Change both together, then re-run `pnpm run splash-logo:convert`.
 const RAMP_STEPS = 16;
 const RAMP_FIRST_SLOT = 1;
 
@@ -157,11 +157,13 @@ export function findLogoDrift(committed, png) {
     if (committed.width !== png.width || committed.height !== png.height) {
         return [`logoData.ts is ${committed.width}x${committed.height} but the PNG is ${png.width}x${png.height}`];
     }
+
     if (committed.indices.length !== png.indices.length) {
         return [`logoData.ts has ${committed.indices.length} indices, expected ${png.indices.length}`];
     }
 
     const firstDiff = png.indices.findIndex((value, i) => value !== committed.indices.at(i));
+
     return firstDiff === -1 ? [] : [`row ${Math.floor(firstDiff / png.width)} differs from the PNG`];
 }
 
@@ -174,16 +176,20 @@ function main() {
 
     if (isCheck) {
         const drift = findLogoDrift(parseLogoModule(readFileSync(OUTPUT_PATH, 'utf-8')), data);
+
         if (drift.length > 0) {
             console.error(`src/splash/logoData.ts is out of date: ${drift.join('; ')}.`);
             console.error('Run `pnpm run splash-logo:convert` then `pnpm run format` to regenerate it.');
             process.exit(1);
         }
+
         console.log('src/splash/logoData.ts matches assets/splash-logo.png.');
+
         return;
     }
 
     writeFileSync(OUTPUT_PATH, renderModule(data), 'utf-8');
+
     console.log(`Wrote ${OUTPUT_PATH} (${data.width}x${data.height}, ${data.indices.length} indices)`);
 }
 

@@ -172,20 +172,19 @@ async function routeAssetChanged(payload: AssetChangedPayload): Promise<void> {
         let isMatched: boolean;
 
         switch (payload.type) {
-            case 'image':
-                {
-                    const outcome = await hotReloadImageAsset(payload.url);
+            case 'image': {
+                const outcome = await hotReloadImageAsset(payload.url);
 
-                    if (outcome === 'cache') {
-                        console.info(
-                            `[BT] Refreshed the cached image '${payload.url}'; no sprite sheet uses it, so nothing else to replace`,
-                        );
-                    }
-
-                    isMatched = outcome !== 'none';
+                if (outcome === 'cache') {
+                    console.info(
+                        `[BT] Refreshed the cached image '${payload.url}'; no sprite sheet uses it, so nothing else to replace`,
+                    );
                 }
 
+                isMatched = outcome !== 'none';
+
                 break;
+            }
 
             case 'audio':
                 isMatched = await AudioClip.hotReload(payload.url);
@@ -248,11 +247,12 @@ function handleAssetChanged(payload: unknown): void {
  * class in place instead of reloading the page.
  *
  * Wired automatically by the snippet the `blit386/vite` plugin (BT-306)
- * injects into a demo/game's entry module, immediately after the
- * `bootstrap(Game)` call:
+ * appends to the end of a demo/game's entry module (the one that calls
+ * `bootstrap(Game)`):
  *
  * ```js
  * import { registerHotReload as __blit386_registerHotReload } from 'blit386';
+ * globalThis.__BLIT386_DEV__ = true;
  * if (import.meta.hot) {
  *     import.meta.hot.accept();
  *     __blit386_registerHotReload(import.meta.hot);

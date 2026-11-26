@@ -18,6 +18,7 @@ export default defineConfig({
                 branches: 80,
                 functions: 80,
                 lines: 80,
+
                 // Glob thresholds do not inherit the global values above.
                 'src/render/effects/**': {
                     statements: 80,

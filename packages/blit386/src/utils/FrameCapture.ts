@@ -99,6 +99,7 @@ export function toStraightAlpha(data: Uint8ClampedArray): void {
  * @param paddedBytesPerRow - Bytes per row including GPU alignment padding.
  * @param isBGRA - Whether the pixel data needs BGRA-to-RGBA swizzling.
  * @returns PNG-encoded Blob.
+ * @throws Error when an `OffscreenCanvas` 2D context cannot be created.
  */
 export async function pixelBufferToPNG(
     buffer: ArrayBuffer,

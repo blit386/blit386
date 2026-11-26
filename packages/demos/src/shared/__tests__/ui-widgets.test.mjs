@@ -5,6 +5,7 @@
  * the same `createReadyContext()` (from ui-test-helpers.mjs) + `stubBt()` setup as
  * ui-core.test.mjs.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

@@ -52,14 +52,19 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
     private palette: Palette | null = null;
     private clearPaletteIndex: number = 0;
     private cameraOffset: Vector2i = Vector2i.zero();
+
     /** Reused clip result so lines allocate nothing per call. */
     private readonly clippedLine: ClippedLine = { x: 0, y: 0, err: 0, steps: 0 };
+
     private readonly commands: DrawCommand[] = [];
     private imageData: ImageData | null = null;
+
     /** The three capture slots, settled at the end of the next frame. */
     private readonly captures = new SoftwareFrameCaptures();
+
     /** Rasterizes the queued commands into {@link imageData}. */
     private readonly raster: SoftwareRaster;
+
     private primitiveSubmittedVertices = 0;
     private spriteSubmittedVertices = 0;
 
@@ -204,7 +209,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
 
     /**
      * Replays all queued draw commands into the pixel buffer and presents the frame.
-     * Also resolves any pending `captureFrame` / `captureFrameAtDisplaySize` promise.
+     * Also settles every pending capture (all three slots) from this frame.
      */
     endFrame(): void {
         if (!this.imageData) {
@@ -504,7 +509,7 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
 
     /**
      * Returns a promise that resolves with a PNG Blob on the next `endFrame` call.
-     * Any previously pending capture is rejected before the new one is registered.
+     * A capture still pending in this slot is rejected first; the logical-size slots are unaffected.
      *
      * @returns Promise that resolves with the captured frame as a PNG `Blob`.
      */

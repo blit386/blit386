@@ -26,7 +26,7 @@ let isSeeded = false;
 const earlyOverrides: [player: number, button: number, codes: string[]][] = [];
 
 /**
- * Replaces both runtime maps with fresh copies of the active layout's defaults.
+ * Replaces both runtime maps with fresh copies of the active layout's defaults and drops any queued pre-seed overrides.
  */
 export function resetKeyboardFaceButtonMaps(): void {
     [player0Keys, player1Keys] = createDefaultKeyboardRuntimeMaps(activeLayout);

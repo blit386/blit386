@@ -64,7 +64,6 @@ function buildPNG(bitmaps) {
         png.data[i + 3] = 255; // A
     }
 
-    // Draw each glyph into the atlas.
     for (let glyphIndex = 0; glyphIndex < GLYPH_COUNT; glyphIndex++) {
         const col = glyphIndex % ATLAS_COLS;
         const row = Math.floor(glyphIndex / ATLAS_COLS);

@@ -88,8 +88,9 @@ can instead of only numbering it. "live-swatch-0" is easier to remember than 200
 TRY THIS
 --------
 
-- Press the backquote key (`) to open the engine overlay. The custom row near the bottom
-  names the live-view preset, and the timing chart gets a tag each time it switches.
+- The engine overlay starts open (the backquote key (`) hides it). The custom row near
+  the bottom names the live-view preset, and the timing chart gets a tag each time it
+  switches.
 - The overlay's palette grid is turned on with 64 columns. Find slots 200-215 in it: they
   change every 2 seconds, while the swatch copies in slots 10-181 never move.
 

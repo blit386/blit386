@@ -52,6 +52,7 @@ export const palette = {
                 'BT.paletteSet expects a Palette. Did you forget to create one with BT.paletteCreate() or a preset like Palette.vga()?',
                 'Palette Error',
             );
+
             return;
         }
 

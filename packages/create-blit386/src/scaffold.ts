@@ -2,8 +2,8 @@
  * Turns the templates plus the kit's canonical docs into a ready-to-run game project.
  *
  * Sources:
- *   - ../templates/base  (language-agnostic: index.html, vite config, README, .editorconfig, .gitattributes,
- *                        .node-version, biome.json, prettier.config.js + .prettierignore +
+ *   - ../templates/base  (language-agnostic: index.html, vite config, README, public/, .gitignore, .editorconfig,
+ *                        .gitattributes, .node-version, biome.json, prettier.config.js + .prettierignore +
  *                        scripts/prettier-plugin-compact-tables.mjs)
  *   - ../templates/js    (the JavaScript game + package.json + jsconfig)
  *   - ../templates/ts    (the TypeScript game + package.json + tsconfig)
@@ -42,7 +42,10 @@ import {
 
 import { NODE_FLOOR } from './env';
 
-/** blit386 version range written into the generated package.json. */
+/**
+ * blit386 version range written into the generated package.json. Derived, not hand-edited: `scripts/bump-lockstep.mjs`
+ * (repo root) writes it together with the kit's `blit386.engineRange`, and `pnpm run bump:check` fails on drift.
+ */
 const BLIT386_RANGE = '^1.9.0';
 
 /**
@@ -255,7 +258,8 @@ export function scaffold(options: ScaffoldOptions): void {
         pmRunFormat: options.pmRunFormat,
         pmRunLint: options.pmRunLint,
 
-        // Yarn 2+ deprecates `--frozen-lockfile` (warns YN0050); Yarn 1 ignores `--immutable` and rewrites the lockfile.
+        // Yarn 2+ deprecates `--frozen-lockfile` (warns YN0050); Yarn 1 ignores `--immutable` and rewrites the
+        // lockfile.
         pmCiInstall: YARN_BERRY_PIN.test(options.packageManager ?? '')
             ? (options.pmCiInstall ?? '').replace('--frozen-lockfile', '--immutable')
             : (options.pmCiInstall ?? ''),
@@ -274,7 +278,7 @@ export function scaffold(options: ScaffoldOptions): void {
         nodeMajor: NODE_FLOOR.split('.', 1)[0] ?? NODE_FLOOR,
     };
 
-    // Collect every file path we write so we can build the ownership manifest.
+    // Every file path written, collected for the ownership manifest.
     const writtenPaths = new Set<string>();
 
     copyTemplateTree(join(templates, 'base'), options.targetDir, vars, writtenPaths);
@@ -305,7 +309,7 @@ export function scaffold(options: ScaffoldOptions): void {
 
     // The kit's canonical guidance, emitted by the same generators `blit agents sync` uses, so these
     // destinations cannot drift from the paths `classifyFile` assigns ownership to. Both emitters copy
-    // the content verbatim - no `{{placeholder}}` rendering - exactly as the previous direct copy did.
+    // the content verbatim - no `{{placeholder}}` rendering.
     writeGeneratedFiles(options.targetDir, [agentsFile(kit), ...collectDocs(kit)], writtenPaths);
 
     // Seal the ownership manifest and write pristine base copies.

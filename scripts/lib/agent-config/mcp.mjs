@@ -1,4 +1,5 @@
 /** The project MCP server pin across `.mcp.json` and the website's discovery card. Part of `agents:check`. */
+
 import { spawnSync } from 'node:child_process';
 
 import { gitEnv } from '../git-env.mjs';
@@ -25,10 +26,12 @@ const PROJECT_MCP_SERVER_TYPE = 'http';
  * landing in agent context. Changing it therefore has to touch this file too, where the
  * diff reads as what it is.
  *
- * Changing the endpoint is a deliberate five-file edit: here, the root `.mcp.json`,
- * `packages/website/public/.well-known/mcp/server-card.json`, `.zed/settings.json`
- * (`context_servers`, since Zed does not read `.mcp.json`), and `ACCEPTED_SHADOW_MCP_ENTRIES` in
- * `packages/blit386/scripts/security/mcp-preflight.mjs` (the governance gate's own copy).
+ * Changing the endpoint is a deliberate multi-file edit: here, the root `.mcp.json`,
+ * `.cursor/mcp.json`, `packages/website/public/.well-known/mcp/server-card.json`,
+ * `.zed/settings.json` (`context_servers`, since Zed does not read `.mcp.json`),
+ * `ACCEPTED_SHADOW_MCP_ENTRIES` in `packages/blit386/scripts/security/mcp-preflight.mjs` (the
+ * governance gate's own copy), and `packages/kit/src/adapters/shared.ts`, which
+ * `pnpm run sync:maintainer-agents` writes into the other maintainer agents' configs.
  */
 export const PROJECT_MCP_SERVER_URL = 'https://blit386.dev/mcp';
 
@@ -115,7 +118,9 @@ export function findProjectMcpFailures(mcpConfigContent, serverCardContent, root
         server = servers[PROJECT_MCP_SERVER_NAME] ?? {};
     } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
+
         failures.push(`.mcp.json is not parseable as JSON: ${detail}`);
+
         return failures;
     }
 
@@ -127,6 +132,7 @@ export function findProjectMcpFailures(mcpConfigContent, serverCardContent, root
 
     if (serverCardContent === null) {
         failures.push('packages/website/public/.well-known/mcp/server-card.json is missing');
+
         return failures;
     }
 
@@ -154,6 +160,7 @@ export function findProjectMcpFailures(mcpConfigContent, serverCardContent, root
         }
     } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
+
         failures.push(`server-card.json is not parseable as JSON: ${detail}`);
     }
 

@@ -10,6 +10,7 @@ export class StallTimeoutError extends Error {
     /** Creates the error with the idle window in its message. */
     constructor() {
         super(`No data received for ${DOWNLOAD_TIMEOUT_MS} ms`);
+
         this.name = 'StallTimeoutError';
     }
 }
@@ -30,14 +31,17 @@ export async function withStallTimeout<T>(run: (signal: AbortSignal, rearm: () =
     const controller = new AbortController();
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     let rejectStall: (error: StallTimeoutError) => void = () => undefined;
+
     const stalled = new Promise<never>((_resolve, reject) => {
         rejectStall = reject;
     });
 
     const arm = (): void => {
         clearTimeout(timeoutId);
+
         timeoutId = setTimeout(() => {
             controller.abort();
+
             rejectStall(new StallTimeoutError());
         }, DOWNLOAD_TIMEOUT_MS);
     };

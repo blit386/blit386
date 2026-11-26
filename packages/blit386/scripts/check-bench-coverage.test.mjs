@@ -125,6 +125,7 @@ describe('changedFilesSince (real git output)', () => {
             // Hook-like env: GIT_DIR would otherwise make git treat pkg as the work tree root.
             previousGitDir = process.env.GIT_DIR;
             process.env.GIT_DIR = join(dir, '.git');
+
             const files = changedFilesSince('HEAD~1', pkg);
 
             assert.deepEqual(files, ['src/core/X.ts']);
@@ -136,6 +137,7 @@ describe('changedFilesSince (real git output)', () => {
             } else {
                 process.env.GIT_DIR = previousGitDir;
             }
+
             // Retries: git may still be writing into the repo (ENOTEMPTY seen under the pre-push hook).
             rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
         }

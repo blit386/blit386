@@ -164,7 +164,6 @@ function getTextureValue(embedTexture, textureFilename, fntDir, outputPath) {
     }
 
     if (embedTexture) {
-        // Validate texture file existence.
         if (!existsSync(resolvedTexturePath)) {
             fail(`Error: The texture file was not found: ${resolvedTexturePath}`);
         }
@@ -182,16 +181,14 @@ function getTextureValue(embedTexture, textureFilename, fntDir, outputPath) {
             fail(`Error reading the texture file: ${error.message}`);
         }
     } else {
-        // Use the relative path from output file to texture.
         const resolvedOutputPath = resolve(outputPath);
         const outputDir = dirname(resolvedOutputPath);
 
-        // Validate texture file existence.
         if (!existsSync(resolvedTexturePath)) {
             fail(`Error: The texture file was not found: ${resolvedTexturePath}`);
         }
 
-        // Compute a relative path from the output directory to the texture file.
+        // Forward slashes so a .btfont written on Windows still loads as a URL path.
         textureValue = relative(outputDir, resolvedTexturePath).replace(/\\/g, '/');
 
         console.log(`Texture reference: ${textureValue}`);
@@ -211,7 +208,9 @@ function getTextureValue(embedTexture, textureFilename, fntDir, outputPath) {
  */
 function parseGlyphData(glyphs, char, tag, charCode) {
     // Parse every numeric attribute (missing ones default to 0) into the glyph's short keys.
-    const glyph = Object.fromEntries(
+
+    // eslint-disable-next-line security/detect-object-injection
+    glyphs[char] = Object.fromEntries(
         GLYPH_ATTRIBUTES.map(([key, name]) => {
             const attr = parseXmlAttribute(tag, name) || '0';
             const value = parseInt(attr, 10);
@@ -223,9 +222,6 @@ function parseGlyphData(glyphs, char, tag, charCode) {
             return [key, value];
         }),
     );
-
-    // eslint-disable-next-line security/detect-object-injection
-    glyphs[char] = glyph;
 }
 
 /**
@@ -242,7 +238,6 @@ function parseGlyphs(xmlData) {
         const tag = charMatch[0];
         const idAttr = parseXmlAttribute(tag, 'id');
 
-        // Validate that the ID attribute exists and is numeric.
         if (!idAttr) {
             fail('Error: The glyph is missing a required id attribute');
         }
@@ -305,25 +300,21 @@ function writeOutput(outputPath, btfont, fontName, fontSize, lineHeight, baselin
  * @returns {void} Does not return a value. The converted file is saved to the specified output path.
  */
 function convertBMFont(fntPath, outputPath, embedTexture = false) {
-    // Validate input file exists.
     if (!existsSync(fntPath)) {
         fail(`Error: The input file was not found: ${fntPath}`);
     }
 
     console.log(`Reading: ${fntPath}`);
 
-    // Read the XML font file.
     const xmlData = readFileSync(fntPath, 'utf-8');
     const fntDir = dirname(fntPath);
 
-    // Parse XML tags.
     const { fontName, fontSize } = parseInfoTag(xmlData);
     const { lineHeight, baseline } = parseCommonTag(xmlData, fontSize);
     const textureFilename = parsePageTag(xmlData);
     const textureValue = getTextureValue(embedTexture, textureFilename, fntDir, outputPath);
     const { glyphs, glyphCount } = parseGlyphs(xmlData);
 
-    // Create the .btfont structure.
     const btfont = {
         name: fontName,
         size: fontSize,
@@ -333,7 +324,6 @@ function convertBMFont(fntPath, outputPath, embedTexture = false) {
         glyphs,
     };
 
-    // Write the output.
     writeOutput(outputPath, btfont, fontName, fontSize, lineHeight, baseline, glyphCount);
 }
 
@@ -355,7 +345,6 @@ function main() {
     // pnpm forwards the separator of `pnpm run convert-font -- <args>` to the script.
     const args = process.argv.slice(2).filter((arg) => arg !== PNPM_ARG_SEPARATOR);
 
-    // Check for the help flag.
     if (args.includes('--help') || args.includes('-h') || args.length === 0) {
         console.log(`
 BMFont to .btfont Converter
@@ -376,11 +365,9 @@ Examples:
         process.exit(0);
     }
 
-    // Parse arguments.
     const embedTexture = args.includes('--embed');
     const paths = args.filter((arg) => !arg.startsWith('-'));
 
-    // Validate no unknown flags.
     const knownFlags = ['-h', '--help', '--embed'];
     const unknownFlags = args.filter((arg) => arg.startsWith('-') && !knownFlags.includes(arg));
 
@@ -399,7 +386,6 @@ Examples:
         );
     }
 
-    // Validate no extra positional arguments.
     if (paths.length !== 2) {
         fail(
             `Error: Expected 2 paths, but got ${paths.length}: ${paths.join(', ')}`,
@@ -409,7 +395,6 @@ Examples:
 
     const [inputPath, outputPath] = paths;
 
-    // Run conversion.
     convertBMFont(inputPath, outputPath, embedTexture);
 }
 

@@ -1,7 +1,7 @@
 /**
  * Shared URL helpers for the engine's dev-only asset hot-replace path.
  *
- * Used by `AssetLoader`, `SpriteSheet`, `AudioClip`, and `BitmapFont` to cache-bust
+ * Used by `AssetLoader`, `AudioClip`, `BitmapFont`, `btfontFile`, and the hot-reload registry to cache-bust
  * a re-fetched asset while keeping its original cache key, and to canonicalize URLs
  * for hot-reload registry lookups that may see slightly different-looking but
  * equivalent URLs (relative vs. rooted, or a `blit386:asset-changed` payload URL

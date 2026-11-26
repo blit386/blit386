@@ -107,11 +107,7 @@ export class Subsystems {
     /**
      * Attaches the reduced-motion preference listener, forwarding to the active demo's
      * optional {@link IBTDemo#onReducedMotionChange} looked up at call time, so hot swaps of
-     * either tier reach the current handler.
-     *
-     * Extracted from {@link BTAPI#init} to keep that method's cyclomatic complexity within the
-     * project's lint threshold, following the same pattern as {@link attachInputSubsystems}
-     * and {@link attachAudioSubsystem}.
+     * either tier reach the current handler. Called last in `Lifecycle#runInit`, after the loop starts.
      */
     public attachReducedMotion(): void {
         this.engine.reducedMotion?.detach();

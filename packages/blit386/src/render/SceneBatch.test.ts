@@ -19,14 +19,17 @@ import { SceneBatch } from './SceneBatch';
 /** Encodes one frame and returns each range it encoded, tagged with its pipeline, in encode order. */
 function encodeDraws(scene: SceneBatch): string[] {
     const calls: string[] = [];
+
     const primitives = vi.spyOn(scene.primitives, 'encodeRange').mockImplementation((_pass, first, count) => {
         calls.push(`primitive vertices ${first}+${count}`);
     });
+
     const sprites = vi.spyOn(scene.sprites, 'encodeBatches').mockImplementation((_pass, from, to) => {
         calls.push(`sprite batches ${from}-${to}`);
     });
 
     scene.encode(createMockRenderPassEncoder());
+
     primitives.mockRestore();
     sprites.mockRestore();
 

@@ -204,7 +204,7 @@ const PARTICLE_SLOT_START = 50;
 // the same colors: 70+N..70+2N-1.
 const SPRITE_BASE = 70;
 
-// One self-running mini scene: walking rock, following camera, overlay rows, day/night,
+// One self-running mini scene: walking rock, following camera, HUD panels, day/night,
 // sparkles. All color computation happens in update(); render() uses palette indices
 // only.
 class Demo {

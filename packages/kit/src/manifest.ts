@@ -33,10 +33,13 @@ export type TemplateVars = Record<string, string>;
 export interface ManifestEntry {
     /** File path relative to the project root, using forward slashes. */
     path: string;
+
     /** Ownership class determining how `blit agents sync` handles this file. */
     class: FileClass;
+
     /** Kit version that last wrote this file. */
     kitVersion: string;
+
     /**
      * SHA-256 hex digest of the reconciled on-disk content from the last sync (at scaffold time this
      * is simply the generated content). `--check`/doctor compare the current file against this to
@@ -50,14 +53,17 @@ export interface ManifestEntry {
 export interface BlitManifest {
     /** Kit version that last wrote this manifest. */
     kitVersion: string;
+
     /** ISO-8601 creation timestamp. */
     createdAt: string;
+
     /**
      * Template variables used at scaffold time (package-manager commands, project name, ...).
      * `blit agents sync` reads these back so it regenerates kit files with the exact same values,
      * independent of the environment it runs in.
      */
     vars: TemplateVars;
+
     /** One entry per generated file, sorted by path for stable diffs. */
     files: ManifestEntry[];
 }

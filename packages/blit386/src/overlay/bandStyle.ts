@@ -7,8 +7,13 @@ import { DEFAULT_IDX_BG, DEFAULT_IDX_TEXT } from './constants';
 
 /** Resolved overlay chrome palette indices. */
 export interface OverlayChromeIndices {
+    /** Bar background palette index. */
     readonly barIndex: number;
+
+    /** System-font text palette index. */
     readonly textIndex: number;
+
+    /** Palette index of the gap rows between bands. */
     readonly gapIndex: number;
 }
 

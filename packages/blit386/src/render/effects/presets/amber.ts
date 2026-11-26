@@ -12,7 +12,7 @@ import type { Effect } from '../Effect';
  * Ships as a parameter-only set - the underlying colors stay full-RGB until
  * the planned MonochromeQuantize effect lands.
  * For now this preset gives you the *feel* (CRT curvature + scanlines +
- * vignette + warm-tinted bloom) without the actual amber re-quantization.
+ * vignette + bloom) without the actual amber re-quantization.
  *
  * @since 1.0.3
  * @returns Array of pre-configured display-tier effects.

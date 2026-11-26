@@ -17,6 +17,7 @@ export type NineSliceMode = 'stretch' | 'tile';
 export interface NineSliceOptions {
     /** How the four edges fill their length. */
     edges?: NineSliceMode;
+
     /** How the center fills its box. */
     center?: NineSliceMode;
 }
@@ -123,6 +124,7 @@ export function splitNineSliceAxis(size: number, start: number, end: number, out
         out[0] = 0;
         out[1] = 0;
         out[2] = 0;
+
         return;
     }
 
@@ -132,6 +134,7 @@ export function splitNineSliceAxis(size: number, start: number, end: number, out
         out[0] = start;
         out[1] = size - caps;
         out[2] = end;
+
         return;
     }
 

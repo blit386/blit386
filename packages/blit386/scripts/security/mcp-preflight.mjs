@@ -1,3 +1,11 @@
+/**
+ * MCP security preflight: reports which security MCP servers (`SECURITY_MCP_REGISTRY`) are usable in
+ * the current agent session, with fallbacks for the ones that are not, and audits MCP configs for
+ * shadow servers outside `ACCEPTED_SHADOW_MCP_ENTRIES`. `--governance-only` skips the session check
+ * (CI: .github/workflows/mcp-governance-audit.yml). Exits 1 when the summary says not to proceed.
+ * Procedure: docs/security/security-runbook.md.
+ */
+
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -7,6 +15,8 @@ import { fileURLToPath } from 'node:url';
 import { PNPM_ARG_SEPARATOR } from '../../../../scripts/lib/pnpm-arg-separator.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
+
+/** The engine package directory, not the monorepo root: CI passes `--repo-root .` explicitly. */
 const DEFAULT_REPO_ROOT = path.resolve(SCRIPT_DIR, '../..');
 
 /** @typedef {'critical' | 'recommended'} McpTier */
@@ -121,9 +131,11 @@ export function classifyMcpServer(mcpsDir, serverId) {
 
     if (fs.existsSync(statusPath)) {
         statusMessage = fs.readFileSync(statusPath, 'utf8').trim();
+
         if (statusIndicatesError(statusMessage)) {
             return { status: 'errored', toolCount: 0, statusMessage };
         }
+
         if (statusIndicatesAuthRequired(statusMessage)) {
             return { status: 'auth_required', toolCount: 0, statusMessage };
         }
@@ -141,6 +153,7 @@ export function classifyMcpServer(mcpsDir, serverId) {
     if (toolCount === 0) {
         // STATUS.md error and auth text already returned above; only the auth tool file is left.
         const status = fs.existsSync(path.join(toolsDir, 'mcp_auth.json')) ? 'auth_required' : 'absent';
+
         return { status, toolCount: 0, statusMessage };
     }
 
@@ -163,6 +176,7 @@ export function isRunlayerManagedEntry(entry) {
     if (typeof record.url === 'string' && URL.canParse(record.url)) {
         const { protocol, hostname } = new URL(record.url);
         const host = hostname.toLowerCase();
+
         if (protocol === 'https:' && (host === RUNLAYER_DOMAIN || host.endsWith(`.${RUNLAYER_DOMAIN}`))) {
             return true;
         }
@@ -188,17 +202,22 @@ function codexServerTableName(line, lineNumber) {
     // Bare dotted names, or mcp_servers."<name>" without escapes. Anything else that opens with
     // `[` (a trailing comment, `[[...]]`, an escaped key) cannot be read safely.
     const header = /^\[(mcp_servers\.(?:"[^"\\]+"|[\w-]+)(?:\.[\w-]+)*|[\w.-]+)\]$/u.exec(line);
+
     if (!header) {
         throw new Error(`line ${lineNumber}: unsupported TOML table header`);
     }
+
     const tableName = header[1] ?? '';
     const server = /^mcp_servers\.(?:"([^"]+)"|([\w-]+))$/u.exec(tableName);
+
     if (server) {
         return server[1] ?? server[2] ?? '';
     }
+
     if (/^mcp_servers\.(?:"[^"]+"|[\w-]+)\./u.test(tableName) || !tableName.startsWith('mcp_servers')) {
         return null;
     }
+
     throw new Error(`line ${lineNumber}: unsupported mcp_servers table [${tableName}]`);
 }
 
@@ -215,6 +234,7 @@ function codexServerTableName(line, lineNumber) {
 export function parseCodexMcpServers(raw) {
     /** @type {Map<string, Record<string, unknown>>} */
     const servers = new Map();
+
     /** @type {Record<string, unknown> | null} */
     let current = null;
 
@@ -240,16 +260,20 @@ export function parseCodexMcpServers(raw) {
 
         // Pairs: a bare key only, so a dotted or quoted key can never smuggle in mcp_servers.
         const pair = /^([\w-]+)\s*=\s*(.+)$/u.exec(line);
+
         if (!pair || pair[1] === 'mcp_servers') {
             throw new Error(`line ${lineNumber}: unsupported TOML line`);
         }
+
         // Every value must parse, in any table, so a multi-line string can never hide lines.
         let value;
+
         try {
             value = JSON.parse(pair[2] ?? '');
         } catch {
             throw new Error(`line ${lineNumber}: unsupported TOML value`);
         }
+
         if (current !== null) {
             current[pair[1] ?? ''] = value;
         }
@@ -267,6 +291,7 @@ function parseConfig(raw, format) {
     if (format === 'codex-toml') {
         return parseCodexMcpServers(raw);
     }
+
     // JSONC: whole-line comments only, as scripts/lib/agent-config/skills.mjs reads Zed settings.
     const text =
         format === 'jsonc'
@@ -275,6 +300,7 @@ function parseConfig(raw, format) {
                   .filter((line) => !/^\s*\/\//u.test(line))
                   .join('\n')
             : raw;
+
     return JSON.parse(text);
 }
 
@@ -288,18 +314,22 @@ function parseConfig(raw, format) {
  */
 function normalizeEntry(entry) {
     const record = entry !== null && typeof entry === 'object' ? /** @type {Record<string, unknown>} */ (entry) : {};
+
     const isPresent = (/** @type {unknown} */ value) => value !== undefined && value !== null;
     const urlValues = [record.url, record.serverUrl, record.httpUrl].filter(isPresent);
     const [command, ...argv] = Array.isArray(record.command) ? record.command : [record.command];
+
     const normalized = {
         url: typeof urlValues[0] === 'string' ? urlValues[0] : '',
         command: typeof command === 'string' ? command : '',
         args: Array.isArray(record.command) ? argv : Array.isArray(record.args) ? record.args : [],
     };
+
     // Two URL keys, or a URL and a command: which one a client uses differs per client, so the
     // gate cannot know what it is approving. Presence counts, not type - Zed writes `command` as
     // an object, and a value this gate cannot read must still block.
     const ambiguous = urlValues.length > 1 || (urlValues.length === 1 && isPresent(record.command));
+
     return { ...normalized, ambiguous };
 }
 
@@ -315,12 +345,15 @@ function normalizeEntry(entry) {
 export function scanMcpConfigFile(configPath, configFormat = MCP_JSON_FORMAT) {
     try {
         const raw = fs.readFileSync(configPath, 'utf8');
+
         const parsed = /** @type {Record<string, unknown> | null} */ (parseConfig(raw, configFormat.format));
+
         const serversObject = parsed?.[configFormat.key];
 
         if (serversObject === undefined) {
             return { path: configPath, servers: [], error: null };
         }
+
         if (serversObject === null || typeof serversObject !== 'object' || Array.isArray(serversObject)) {
             return { path: configPath, servers: [], error: `${configFormat.key} is not an object` };
         }
@@ -330,6 +363,7 @@ export function scanMcpConfigFile(configPath, configFormat = MCP_JSON_FORMAT) {
 
         for (const [name, rawEntry] of Object.entries(serversObject)) {
             const entry = normalizeEntry(rawEntry);
+
             if (entry.ambiguous) {
                 servers.push({ name, classification: 'unknown' });
             } else if (isRunlayerManagedEntry(entry)) {
@@ -351,9 +385,12 @@ export function scanMcpConfigFile(configPath, configFormat = MCP_JSON_FORMAT) {
 }
 
 /**
+ * Scans `.mcp.json` / `mcp.json` in `repoRoot`, its parent and (with `includeUserConfig`) `$HOME`,
+ * plus the repo-root `AGENT_MCP_CONFIGS`. Only files that exist are scanned.
+ *
  * @param {string} repoRoot
  * @param {{ includeUserConfig?: boolean }} [options]
- * @returns {{ path: string, servers: { name: string, classification: string }[] }[]}
+ * @returns {ReturnType<typeof scanMcpConfigFile>[]} One scan result per existing config file.
  */
 export function discoverMcpConfigPaths(repoRoot, options = {}) {
     /** @type {string[]} */
@@ -483,7 +520,9 @@ export function runMcpPreflight(options) {
         if (config.error !== null) {
             return [{ path: config.path, reason: `unreadable: ${config.error}` }];
         }
+
         const unknown = config.servers.filter((server) => server.classification === 'unknown');
+
         return unknown.length > 0
             ? [
                   {
@@ -587,22 +626,27 @@ export function formatPreflightSummary(report) {
     }
     const shadowLine = (/** @type {{ config: string, name: string, classification: string }} */ shadow) =>
         `  - ${shadow.name} (${shadow.classification}) in ${shadow.config}`;
+
     pushSection(lines, 'Accepted shadow MCP entries:', report.governance.acceptedShadowServers.map(shadowLine));
+
     pushSection(
         lines,
         'Unaccepted shadow MCP entries flagged:',
         report.governance.unacceptedShadowServers.map(shadowLine),
     );
+
     pushSection(
         lines,
         'Unclassifiable or unreadable MCP configs:',
         report.governance.blockingConfigs.map((blocking) => `  - ${blocking.path}: ${blocking.reason}`),
     );
+
     if (report.governance.shadowCount === 0) {
         lines.push('', 'No shadow MCP servers flagged in scanned configs.');
     }
 
     lines.push('', `Proceed: ${report.summary.proceed}`);
+
     return lines.join('\n');
 }
 

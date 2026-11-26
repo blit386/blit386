@@ -45,32 +45,46 @@ import {
  * Scrolling update/render timing chart with a fixed-capacity ring buffer.
  */
 export class TimingChart {
+    /** Whether the chart band is configured; fixed at construction. */
     readonly #isEnabled: boolean;
 
+    /** Configured fixed-step rate, the frame budget for severity and the budget grid line. */
     readonly #targetFps: number;
 
+    /** Renderer diagnostics mode; always `false` when the chart is disabled. */
     readonly #diagnosticsMode: OverlayTimingChartDiagnosticsMode;
 
+    /** Ring-buffer capacity in columns, equal to the chart width; `0` until the first {@link reset}. */
     #bufferWidth = 0;
 
+    /** Ring-buffer slot the next sample writes. */
     #writeIndex = 0;
 
+    /** Populated ring-buffer columns, capped at buffer width. */
     #sampleCount = 0;
 
+    /** Update milliseconds per column. */
     #updateMsBuffer = new Float32Array(0);
 
+    /** Render milliseconds per column. */
     #renderMsBuffer = new Float32Array(0);
 
+    /** `TIMING_CHART_SEVERITY_*` per column. */
     #severityBuffer = new Uint8Array(0);
 
+    /** `1` where either pipeline overflowed that frame; written only in a diagnostics mode. */
     #overflowBuffer = new Uint8Array(0);
 
+    /** Primitive vertices per column; written only in `'rich'` mode. */
     #primitiveVertexBuffer = new Uint32Array(0);
 
+    /** Sprite vertices per column; written only in `'rich'` mode. */
     #spriteVertexBuffer = new Uint32Array(0);
 
+    /** Reused 1x1 rect for sample dots and baseline markers. */
     readonly #dotScratch = new Rect2i(0, 0, 1, 1);
 
+    /** Reused rect for grid lines and tag markers. */
     readonly #lineScratch = new Rect2i(0, 0, 1, 1);
 
     /** Reusable marker list: fixed thresholds plus one frame-budget slot. */
@@ -85,6 +99,7 @@ export class TimingChart {
     /** Timing samples recorded since the last chart width reset (one per overlay frame). */
     #totalSamples = 0;
 
+    /** Reused draw position for tag and tick labels. */
     readonly #tagLabelPos = new Vector2i(0, 0);
 
     /** Reusable group pool for {@link groupTimingChartTagsByColumn}, populated fresh each {@link draw}. */
@@ -505,7 +520,7 @@ export class TimingChart {
     }
 
     /**
-     * Draws a vertex-pressure sample in the lower third of the chart band (rich diagnostics mode).
+     * Draws a vertex-pressure sample in the bottom `regionHeight` rows of the chart band (rich diagnostics mode).
      *
      * @param target - Overlay draw target.
      * @param x - Column X in screen space.

@@ -7,6 +7,7 @@
  * instead of writing every card into a directory named "--force". The two common errors are
  * reworded into the scripts' own short form; anything else keeps node's message.
  */
+
 import { parseArgs } from 'node:util';
 
 import { PNPM_ARG_SEPARATOR } from '../../../scripts/lib/pnpm-arg-separator.mjs';

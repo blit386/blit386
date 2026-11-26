@@ -28,7 +28,7 @@ export function getPostDate(page: { data: unknown }): Date | undefined {
 
 /**
  * Supplies `core:get-creation-date` from the same frontmatter reader the blog index and
- * `feedPlugin` use, so fumapress's own blog layouts resolve dates the way our components do.
+ * `feedPlugin` use, so fumapress's own blog layouts resolve dates the way this site's components do.
  *
  * Registered ahead of `fumadocsMdx` in `press.config.tsx`. Without it the tag pages
  * (`/blog/tags/<tag>`) rendered today's date on every card: they are fumapress's stock

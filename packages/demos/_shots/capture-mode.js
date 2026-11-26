@@ -54,10 +54,13 @@ async function startCaptureMode(shell) {
     const { demos, gallery, liveImages, liveImageKey, setStatus } = shell;
     const frame = createFrameAdapter(document.getElementById('shots-frame'));
     let currentManifest = shell.manifest;
+
     // What the last save wrote: a failed image is in currentManifest (the gallery shows it) but not here.
     let savedManifest = shell.manifest;
+
     /** @type {Array<object>} */
     let unsaved = [];
+
     let directory = null;
 
     function engineVersion() {

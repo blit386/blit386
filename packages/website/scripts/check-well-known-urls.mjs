@@ -13,9 +13,10 @@
  * not just a 200.
  *
  * `/mcp` cannot be checked any other way: it is Hono middleware registered by a
- * Fumapress plugin (`src/mcp-server.ts`), not a static file, and it reads its docs
- * corpus from the Cloudflare `ASSETS` binding at request time - there is no static
- * route manifest to inspect and no dist/ file to check for existence.
+ * Fumapress plugin (`src/mcp-server.ts`), not a static file, and it builds its docs
+ * corpus from the loader's pages at request time (only `llms.txt` comes from the
+ * `ASSETS` binding) - there is no static route manifest to inspect and no dist/ file
+ * to check for existence.
  *
  * Requires a build to have already run (`pnpm run build`). Not part of `preflight`: CI's
  * `build-website` job runs it after the build.
@@ -23,6 +24,7 @@
  * Usage:
  *   node scripts/check-well-known-urls.mjs
  */
+
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { createServer } from 'node:net';

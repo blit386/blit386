@@ -128,7 +128,7 @@ interface DocsLayoutContext extends ConfigContext {
 
 const docsPageLayout = createDocsLayoutPage<DocsLayoutContext>({
     /**
-     * Renders the doc body ourselves (instead of leaving it to the default `render-body`
+     * Renders the doc body directly (instead of leaving it to the default `render-body`
      * fallback) so the last-updated date can be appended after it.
      *
      * There is deliberately no "Edit on GitHub" link here: this is a single-maintainer site,

@@ -43,9 +43,10 @@ export const PALETTE_COPY_STATUS_SECONDS = 0.75;
 type CopyStatus = 'idle' | 'copied' | 'failed';
 
 /**
- * Handles palette swatch hover, copy-on-press, and tooltip rendering for the overlay.
+ * Handles palette swatch hover, copy-on-press, scrolling, and tooltip rendering for the overlay.
  */
 export class PaletteInteraction {
+    /** Configured fixed-update rate, converting {@link PALETTE_COPY_STATUS_SECONDS} to ticks. */
     readonly #targetFps: number;
 
     /** Reused tooltip layout written by {@link layoutTooltip}. */
@@ -54,15 +55,19 @@ export class PaletteInteraction {
     /** Reused bounds of the swatch the tooltip docks to. */
     readonly #tooltipSwatch = new Rect2i();
 
+    /** Palette index under an active pointer, or `null` when none is hovered. */
     #hoveredIndex: number | null = null;
 
+    /** Feedback state of the last swatch copy; `'idle'` once it expires. */
     #copyStatus: CopyStatus = 'idle';
 
+    /** Palette index the copy status refers to, or `-1` while idle. */
     #copyStatusIndex = -1;
 
     /** Fixed-update ticks left before the copy status clears; counts down so a tick reset cannot strand it. */
     #copyStatusTicksLeft = 0;
 
+    /** Cached tooltip text from tooltip label; empty when no tooltip shows. */
     #tooltipLabel = '';
 
     /** Hovered-index watermark backing the cached tooltip label; `undefined` forces the first resolve. */
@@ -74,14 +79,19 @@ export class PaletteInteraction {
     /** Copy-status-index watermark backing the cached tooltip label. */
     #tooltipLabelCopyStatusIndex = Number.NaN;
 
+    /** First visible palette grid row. */
     #scrollRowOffset = 0;
 
+    /** Scrollbar track width reserved on the right edge of the palette band, in pixels. */
     #scrollbarTrackWidth = PALETTE_SCROLLBAR_TRACK_WIDTH_PX;
 
+    /** Pointer slot driving the current scroll drag, or `null` when none is dragging. */
     #scrollDragSlot: number | null = null;
 
+    /** Pointer Y where the current scroll drag started, in display pixels. */
     #scrollDragStartY = 0;
 
+    /** {@link #scrollRowOffset} when the current scroll drag started. */
     #scrollDragStartOffset = 0;
 
     /** Latest fixed-update tick observed from {@link tickCopyStatus}. */
@@ -133,7 +143,7 @@ export class PaletteInteraction {
      * @param plan - Layout plan for this frame.
      * @param grid - Palette grid layout.
      * @param isSwatchPressConsumed - When true, drag scrolling is skipped this frame.
-     * @returns `true` when a scrollbar-track press should block the toggle corner.
+     * @returns `true` when a scrollbar press or drag, or a consumed wheel scroll, should block the toggle corner.
      */
     handleScroll(
         pointer: PointerInput | null,
@@ -507,7 +517,7 @@ export class PaletteInteraction {
      * @param grid - Palette grid layout.
      * @param displayWidth - Logical display width.
      * @param displayHeight - Logical display height.
-     * @returns Tooltip layout (label in {@link #tooltipLabel}), or `null`.
+     * @returns Tooltip layout, or `null`.
      */
     #layoutActiveTooltip(
         plan: OverlayLayoutPlan,

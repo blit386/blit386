@@ -99,9 +99,9 @@ while the scene changes around it.
 TRY THIS
 --------
 
-- Press the backquote key (`) to open the engine overlay. The custom row near the bottom
-  repeats the phase label, and the timing chart gets a tag each time a fade or flash
-  starts.
+- The engine overlay starts open (the backquote key (`) hides it). The custom row near
+  the bottom repeats the phase label, and the timing chart gets a tag each time a fade or
+  flash starts.
 - Watch the lightning flash closely: the whole screen, panel included, goes white for
   200 ms, because the flash covers every slot except 0.
 - Add ?reducedmotion to the URL: the fades still play, but the lightning phase passes
@@ -124,7 +124,7 @@ const PHASE_FLASH = 12; // 200 ms
 const PHASE_NIGHT_HOLD_2 = 120; // 2 seconds
 const PHASE_FADE_TO_DAY = 120; // 2 seconds
 
-// Short on-screen label for each phase (the panel title and the overlay row).
+// Short on-screen label for each phase (the panel's label row and the overlay row).
 // The lightning phase's name, compared in two places (the label and the effect trigger).
 const FLASH_PHASE = 'flash';
 
@@ -303,8 +303,8 @@ class Demo {
         applyTheme(this.night);
         applyTheme(this.palette);
 
-        // Make the day palette the active one. The fades and the flash change its
-        // colors in place from here on.
+        // Make the third palette, the copy of the day colors, the active one. The fades
+        // and the flash change its colors in place from here on.
         BT.paletteSet(this.palette);
 
         console.log('[PaletteFadeDemo] Initialized');

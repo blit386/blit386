@@ -136,35 +136,46 @@ export function createMockAudioParam(initialValue: number = DEFAULT_GAIN_VALUE):
         get value(): number {
             return currentValue;
         },
+
         set value(next: number) {
             assertFiniteParamValue(next);
             currentValue = next;
         },
+
         setValueAtTimeCalls,
         linearRampToValueAtTimeCalls,
         setValueCurveAtTimeCalls,
         cancelScheduledValuesCalls,
+
         setValueAtTime: (value: number, startTime: number) => {
             assertFiniteParamValue(value);
+
             setValueAtTimeCalls.push({ value, startTime });
+
             param.value = value;
 
             return param;
         },
+
         linearRampToValueAtTime: (value: number, endTime: number) => {
             assertFiniteParamValue(value);
             assertFiniteParamValue(endTime);
+
             linearRampToValueAtTimeCalls.push({ value, endTime });
+
             param.value = value;
 
             return param;
         },
+
         setValueCurveAtTime: (values: Float32Array, startTime: number, duration: number) => {
             setValueCurveAtTimeCalls.push({ values, startTime, duration });
+
             param.value = values[values.length - 1] ?? param.value;
 
             return param;
         },
+
         cancelScheduledValues: (startTime: number) => {
             cancelScheduledValuesCalls.push(startTime);
 
@@ -187,11 +198,13 @@ export function createMockGainNode(): GainNode {
     const node = {
         gain: createMockAudioParam(),
         connectCalls,
+
         connect: (destination: unknown) => {
             connectCalls.push(destination);
 
             return destination;
         },
+
         disconnect: () => {},
     };
 
@@ -218,12 +231,15 @@ export function createMockAudioBufferSourceNode(): AudioBufferSourceNode {
         connectCalls,
         startCalls,
         stopCalls,
+
         connect: (destination: unknown) => {
             connectCalls.push(destination);
 
             return destination;
         },
+
         disconnect: () => {},
+
         start: (when: number = 0, offset?: number, duration?: number) => {
             if (hasStarted) {
                 throw new Error('cannot start an AudioBufferSourceNode more than once');
@@ -275,11 +291,13 @@ export function createMockStereoPannerNode(): StereoPannerNode {
     const node = {
         pan: createMockAudioParam(0),
         connectCalls,
+
         connect: (destination: unknown) => {
             connectCalls.push(destination);
 
             return destination;
         },
+
         disconnect: () => {},
     };
 
@@ -301,11 +319,13 @@ export function createMockAnalyserNode(): AnalyserNode {
         smoothingTimeConstant: DEFAULT_SMOOTHING_TIME_CONSTANT,
         mockTimeDomainData: new Float32Array(DEFAULT_FFT_SIZE),
         connectCalls,
+
         connect: (destination: unknown) => {
             connectCalls.push(destination);
 
             return destination;
         },
+
         disconnect: () => {},
         getFloatTimeDomainData: (array: Float32Array) => {
             const source = node.mockTimeDomainData;
@@ -342,8 +362,10 @@ export function createMockAudioBuffer(
         length,
         duration: length / sampleRate,
         numberOfChannels,
+
         // eslint-disable-next-line security/detect-object-injection -- channel index is bounded by numberOfChannels
         getChannelData: (channel: number) => channels[channel] ?? new Float32Array(0),
+
         copyFromChannel: (destination: Float32Array, channelNumber: number, bufferOffset = 0) => {
             // eslint-disable-next-line security/detect-object-injection -- channel index is bounded by numberOfChannels
             const source = channels[channelNumber];
@@ -352,6 +374,7 @@ export function createMockAudioBuffer(
                 destination.set(source.subarray(bufferOffset, bufferOffset + destination.length));
             }
         },
+
         copyToChannel: (source: Float32Array, channelNumber: number, bufferOffset = 0) => {
             // eslint-disable-next-line security/detect-object-injection -- channel index is bounded by numberOfChannels
             const target = channels[channelNumber];
@@ -394,16 +417,21 @@ export function createMockAudioContext(): AudioContext {
         createAnalyserCalls,
         createBufferCalls,
         decodeAudioDataCalls,
+
         decodeAudioDataImpl: (_audioData: ArrayBuffer) => Promise.resolve(createMockAudioBuffer()),
+
         get resumeCallCount() {
             return resumeCallCount;
         },
+
         get suspendCallCount() {
             return suspendCallCount;
         },
+
         get closeCallCount() {
             return closeCallCount;
         },
+
         createGain: () => {
             const node = createMockGainNode();
 
@@ -411,6 +439,7 @@ export function createMockAudioContext(): AudioContext {
 
             return node;
         },
+
         createBufferSource: () => {
             const node = createMockAudioBufferSourceNode();
 
@@ -418,6 +447,7 @@ export function createMockAudioContext(): AudioContext {
 
             return node;
         },
+
         createStereoPanner: () => {
             const node = createMockStereoPannerNode();
 
@@ -425,6 +455,7 @@ export function createMockAudioContext(): AudioContext {
 
             return node;
         },
+
         createAnalyser: () => {
             const node = createMockAnalyserNode();
 
@@ -432,29 +463,34 @@ export function createMockAudioContext(): AudioContext {
 
             return node;
         },
+
         createBuffer: (numberOfChannels: number, length: number, sampleRate: number) => {
             createBufferCalls.push({ numberOfChannels, length, sampleRate });
 
             return createMockAudioBuffer(numberOfChannels, length, sampleRate);
         },
+
         resume: () => {
             resumeCallCount += 1;
             context.state = 'running';
 
             return Promise.resolve();
         },
+
         suspend: () => {
             suspendCallCount += 1;
             context.state = 'suspended';
 
             return Promise.resolve();
         },
+
         close: () => {
             closeCallCount += 1;
             context.state = 'closed';
 
             return Promise.resolve();
         },
+
         decodeAudioData: (audioData: ArrayBuffer) => {
             decodeAudioDataCalls.push(audioData);
 

@@ -9,7 +9,7 @@ import type { PaletteEffect } from './PaletteEffect';
 import { applyFadeToRange, computeFadeProgress, snapshotPaletteRange } from './paletteFade';
 
 /**
- * Smoothly interpolates all palette entries toward a target palette over time.
+ * Smoothly interpolates every palette entry except index 0 (transparent) toward a target palette over time.
  *
  * Snapshots the current palette at creation. Each fixed update computes an eased
  * progress value and lerps between the snapshot and target. At completion,
@@ -64,6 +64,7 @@ export class FadeEffect implements PaletteEffect {
         const count = Math.min(this.size, palette.size);
 
         applyFadeToRange(palette, this.snapshotColors, this.targetColors, 1, count - 1, 0, t, easedT);
+
         palette.markDirty();
 
         return isRunning;

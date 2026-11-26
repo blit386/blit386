@@ -13,7 +13,7 @@ const HTML_ESCAPE_PATTERN = /[&<>"']/g;
 /**
  * Escape a string for safe interpolation into HTML text content or a quoted attribute value.
  *
- * Shared by `virtual-demos.js` (page titles, the dev index page) and `social-meta.js` (every
+ * Shared by `virtual-demos.js` (page titles) and `social-meta.js` (every
  * `content=` attribute in the social head block), so both escape identically and neither
  * imports the other.
  *

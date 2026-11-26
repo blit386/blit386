@@ -54,7 +54,7 @@ WHAT YOU WILL LEARN
 HOW THE PALETTE IS LAID OUT
 ---------------------------
 
-- Slots 1-9: the static basics - white, background, black, and the six named colors.
+- Slots 1-8: the static basics - white, background, black, and the five named colors.
 - Slot 15: the overlay text color. Slots 18-19: the lerp endpoints A and B. Slot 20: the
   overlay bar color.
 - Slots 30-93: the 64 rainbow hues. Slots 94-125: the 32 gradient steps. Slot 126: the

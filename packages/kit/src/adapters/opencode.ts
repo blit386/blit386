@@ -195,7 +195,7 @@ const OPENCODE_PERMISSION = {
 } as const;
 
 /**
- * Which formatter owns which file type, the same split as the Claude and Cursor `format-file.cjs` hook and the starter's
+ * Which formatter owns which file type, the same split as the other agents' `format-file.cjs` hook and the starter's
  * `format` script: Biome formats code and JSON, Prettier formats Markdown and YAML. OpenCode's formatters are off until
  * enabled, and its built-in Prettier would also claim code files, so each tool is pinned to its own extensions.
  */

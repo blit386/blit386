@@ -114,6 +114,7 @@ function attachDiff(view, { entry, variant, img, element, caption }) {
 function createGallery(root, hooks) {
     /** @type {Array<object>} */
     let entries = [];
+
     const byKey = new Map();
     const view = {
         stacked: true,
@@ -128,6 +129,7 @@ function createGallery(root, hooks) {
     const selected = new Set();
     let anchorKey = null;
     const flagged = new Set();
+
     /** @type {Array<{ key: string, slug: string, pose: string, stackSize: number }>} */
     let tiles = [];
 

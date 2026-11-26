@@ -13,10 +13,9 @@ import { sitemapPlugin } from './plugins/sitemap.js';
 import { virtualDemos } from './plugins/virtual-demos.js';
 
 /**
- * Vite plugin to flatten the demos/ subdirectory in the build output.
- * Moves all files from dist/demos/ to dist/ root for cleaner URLs.
- * Also rewrites asset paths in HTML files (../assets/ -> ./assets/).
- * @returns Vite plugin configuration
+ * Run `flattenDemos` on the build output: every page moves from dist/demos/ to the dist/ root
+ * for extensionless URLs, and its `../` references are rewritten to `./`.
+ * @returns {import('vite').Plugin}
  */
 function flattenDemosPlugin() {
     return {
@@ -75,7 +74,7 @@ const blit386DistEntry = resolve(__dirname, '../blit386/dist/blit386.js');
 /**
  * Full-reload the dev server when the linked blit386 library rebuilds.
  * Vite pre-bundles dependencies once; without this, configure() API changes
- * in the workspace package do not show up until you restart `pnpm dev`.
+ * in the workspace package do not show up until you restart `pnpm run dev`.
  * @returns {import('vite').Plugin}
  */
 function blit386WatchReload() {

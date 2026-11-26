@@ -4,6 +4,7 @@
  * (`resolveVintageRedirect`). Both are pure, so every case here is a plain assertion - no fs,
  * no Vite server, no request/response objects.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

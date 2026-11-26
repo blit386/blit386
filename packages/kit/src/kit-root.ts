@@ -48,12 +48,14 @@ export const KIT_PACKAGE_NAME = '@blit386/kit';
 function findKitRootFrom(startFile: string): string {
     let dir = dirname(startFile);
 
-    for (;;) {
+    while (true) {
         const candidate = join(dir, 'package.json');
 
         if (existsSync(candidate)) {
             try {
-                const pkg = JSON.parse(readFileSync(candidate, 'utf8')) as { name?: unknown };
+                const pkg = JSON.parse(readFileSync(candidate, 'utf8')) as {
+                    name?: unknown;
+                };
 
                 if (pkg.name === KIT_PACKAGE_NAME) {
                     return dir;

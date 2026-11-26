@@ -7,24 +7,34 @@ import { OVERLAY_EMA_SMOOTHING } from './constants';
  * Exponentially smoothed overlay timings sourced from {@link OverlayTimingSnapshot}.
  */
 export class TimingSampler {
+    /** Whether a sample has arrived since construction or {@link reset}; the first is taken as-is. */
     #hasSample = false;
 
+    /** EMA of the full-frame CPU time, in milliseconds. */
     #smoothedFrameMs = 0;
 
+    /** EMA of the update-loop CPU time, in milliseconds. */
     #smoothedUpdateMs = 0;
 
+    /** EMA of the demo render CPU time, in milliseconds. */
     #smoothedRenderMs = 0;
 
+    /** Latest fixed-step count, not smoothed. */
     #updateSteps = 0;
 
+    /** Latest draw-call count, not smoothed. */
     #drawCalls = 0;
 
+    /** Latest primitive pipeline overflow count, not smoothed. */
     #primitiveOverflowCount = 0;
 
+    /** Latest sprite pipeline overflow count, not smoothed. */
     #spriteOverflowCount = 0;
 
+    /** Latest primitive vertex count, not smoothed. */
     #primitiveSubmittedVertices = 0;
 
+    /** Latest sprite vertex count, not smoothed. */
     #spriteSubmittedVertices = 0;
 
     /** Counts the cached diagnostics label was built from; `-1` forces the first build. */

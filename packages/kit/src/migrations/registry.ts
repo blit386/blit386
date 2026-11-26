@@ -1,5 +1,5 @@
 /**
- * The known engine migrations, in date order.
+ * The known engine migrations.
  *
  * This file is the source of truth for `packages/blit386/docs/reference-deprecations.md`:
  * `packages/blit386/scripts/gen-deprecations.mjs` renders that doc from `MIGRATIONS` below, grouping renames by their
@@ -12,7 +12,8 @@ import { HOT_RELOAD_SINCE } from './enableHotReload';
 import type { Migration } from './types';
 
 /**
- * Migrations shipped with this kit, oldest first.
+ * Migrations shipped with this kit. Not strictly in date order: the 1.1.0 package rename sits ahead of the older
+ * 1.0.0 API renames.
  *
  * Safety: `BT.*` calls and the engine's distinctive object keys (`overlay*`, `detectDroppedFrames`) auto-apply. Renames
  * whose old name is generic enough to appear in unrelated code - common method words (`equals`, `contains`,
@@ -296,7 +297,7 @@ export const MIGRATIONS: readonly Migration[] = [
     },
 ];
 
-/** Migrations whose new names are canonical at or below `version` (oldest first). */
+/** Migrations whose new names are canonical at or below `version`, in `MIGRATIONS` order. */
 export function migrationsThrough(version: string): Migration[] {
     return MIGRATIONS.filter((m) => compareVersions(version, m.since) >= 0);
 }

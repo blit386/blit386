@@ -1,8 +1,9 @@
 /**
  * Gamepad input subsystem.
  *
- * Uses the browser Gamepad API. `navigator.getGamepads()` is polled exactly
- * once per rendered frame, inside {@link GamepadInput#endFrame}. Previous-state
+ * Uses the browser Gamepad API. `navigator.getGamepads()` is polled once per
+ * rendered frame, inside {@link GamepadInput#endFrame} (plus once on attach and on
+ * each connect/disconnect event). Previous-state
  * (for edge detection via {@link GamepadInput#isButtonPressed} /
  * {@link GamepadInput#isButtonReleased} and repeat anchors) rolls over once per
  * fixed update, inside {@link GamepadInput#endUpdate}, so every edge is reported
@@ -34,8 +35,10 @@ const NO_PAD_SLOT = -1;
 interface PlayerSnapshot {
     /** Whether a gamepad is connected for this player slot. */
     isConnected: boolean;
+
     /** Current button-state bitmask (`BTN_*`). */
     buttons: number;
+
     /** Snapshot axis values in `AXIS_*` order. */
     axes: GamepadAxes;
 }

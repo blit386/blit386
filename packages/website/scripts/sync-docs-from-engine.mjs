@@ -25,6 +25,7 @@
  * `ENGINE_DOCS_DIR` overrides it (the tests point it at a fixture). It must stay
  * inside the monorepo, since GitHub links are built from its path there.
  */
+
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join, posix, relative, resolve, sep } from 'node:path';
@@ -208,10 +209,13 @@ const MDX_COMPONENTS = new Set([
 const MDX_NAME = `(?:${[...MDX_COMPONENTS].join('|')})(?![\\w])`;
 const MDX_OPEN_PATTERN = new RegExp(`<${MDX_NAME}`, 'gu');
 const MDX_CLOSE_PATTERN = new RegExp(`</${MDX_NAME}`, 'gu');
+
 /** A `<` that starts no registered component tag; it is text to MDX-escape. */
 const NON_MDX_ANGLE_PATTERN = new RegExp(`<(?!/?${MDX_NAME})`, 'gu');
+
 /** A whole registered tag on one line (open, close, or self-closing) with no `<` or `>` in its props. */
 const MDX_WHOLE_TAG_PATTERN = new RegExp(`(</?${MDX_NAME}[^<>]*>)`, 'gu');
+
 /** A self-closing tag that is not a registered component (`<br/>`), so its `/>` closes nothing. */
 const NON_MDX_SELF_CLOSE_PATTERN = new RegExp(`<(?!${MDX_NAME})[A-Za-z][^<>]*/>`, 'gu');
 
@@ -361,6 +365,7 @@ const transformBody = (markdown, sourceRepoDir, source = sourceRepoDir) => {
             .reduce((count, segment) => count + (segment.match(MDX_WHOLE_TAG_PATTERN) ?? []).length, 0);
         const canSplitTags = mdxDepth === 0 && isMdxLine && wholeTags === opens + closes;
         let lineDepth = 0;
+
         /** Escape the pieces of a prose segment that sit outside every component on this line. */
         const escapeOutsideTags = (segment) =>
             segment
@@ -441,7 +446,7 @@ const dropDuplicateIntro = (body, description) => {
  * `packages/blit386` injects below each published doc's H1, plus the blank lines around
  * it. The banner is a GitHub-only signpost; the live site must never tell its
  * own readers to go to the site, so it is stripped before anything else runs.
- * Owned upstream by `blit386/scripts/sync-doc-banners.mjs`. Manual-sync hazard: a copy of
+ * Owned upstream by `packages/blit386/scripts/sync-doc-banners.mjs`. Manual-sync hazard: a copy of
  * that file's `BANNER_REGION` (not exported), global so a doc with two banners loses both.
  */
 const SITE_BANNER_REGION = /\n*<!-- blit386\.dev-banner:start -->[\s\S]*?<!-- blit386\.dev-banner:end -->\n*/gu;

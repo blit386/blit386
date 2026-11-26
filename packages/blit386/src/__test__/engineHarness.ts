@@ -110,8 +110,11 @@ export async function startEngine<T>(options: EngineHarnessOptions<T>): Promise<
         'requestAnimationFrame',
         vi.fn((callback: FrameRequestCallback) => frames.push(callback)),
     );
+
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
+
     vi.stubGlobal('OffscreenCanvas', FakeOffscreenCanvas);
+
     Object.defineProperty(globalThis.navigator, 'getGamepads', { configurable: true, value: () => pads });
 
     const demo: IBTDemo = {
@@ -123,10 +126,13 @@ export async function startEngine<T>(options: EngineHarnessOptions<T>): Promise<
             targetFPS: 60,
             ...options.configure,
         }),
+
         init: () => Promise.resolve(true),
+
         update: () => {
             updates.push(options.read());
         },
+
         render: () => {
             renders.push(options.read());
         },
@@ -147,9 +153,13 @@ export async function startEngine<T>(options: EngineHarnessOptions<T>): Promise<
 
     const dispose = (): void => {
         (BTAPI.instance as unknown as { loop: GameLoop | null }).loop?.stop();
+
         resetSingleton();
+
         nowSpy.mockRestore();
+
         vi.unstubAllGlobals();
+
         delete (globalThis.navigator as { getGamepads?: unknown }).getGamepads;
     };
 
@@ -160,6 +170,7 @@ export async function startEngine<T>(options: EngineHarnessOptions<T>): Promise<
         }
     } catch (error) {
         dispose();
+
         throw error;
     }
 
@@ -167,6 +178,7 @@ export async function startEngine<T>(options: EngineHarnessOptions<T>): Promise<
 
     frame(0);
     frame(0);
+
     updates.length = 0;
     renders.length = 0;
 
@@ -174,33 +186,41 @@ export async function startEngine<T>(options: EngineHarnessOptions<T>): Promise<
         updates,
         renders,
         frame,
+
         runAt: (hz, count, beforeFrame) => {
             let ran = 0;
 
             for (let index = 0; index < count; index++) {
                 beforeFrame?.(index);
+
                 ran += frame(1000 / hz);
             }
 
             return ran;
         },
+
         pointer: (type, fields = {}) => {
             lastClient = {
                 clientX: fields.clientX ?? lastClient.clientX,
                 clientY: fields.clientY ?? lastClient.clientY,
             };
+
             dispatch(type, { pointerId: 1, pointerType: 'mouse', button: 0, buttons: 0, ...fields, ...lastClient });
         },
+
         wheel: (deltaY) => {
             dispatch('wheel', { deltaX: 0, deltaY, deltaMode: 0, ...lastClient });
         },
+
         key: (type, code) => {
             dispatch(type, { code, key: code, repeat: false });
         },
+
         pad: (player, pressed) => {
             // eslint-disable-next-line security/detect-object-injection -- player is a test-chosen slot index
             pads[player] = pressed === null ? null : makePad(player, pressed);
         },
+
         dispose,
     };
 }
@@ -218,14 +238,19 @@ function resetSingleton(): void {
 function make2DContext(): object {
     return {
         imageSmoothingEnabled: false,
+
         createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4), width: w, height: h }),
+
         getImageData: (_x: number, _y: number, w: number, h: number) => ({
             data: new Uint8ClampedArray(w * h * 4),
             width: w,
             height: h,
         }),
+
         putImageData: () => undefined,
+
         clearRect: () => undefined,
+
         drawImage: () => undefined,
     };
 }
@@ -240,6 +265,7 @@ function makeCanvas(): EventTarget {
     return Object.assign(new EventTarget(), {
         width: 0,
         height: 0,
+
         style: {
             width: '',
             height: '',
@@ -248,7 +274,9 @@ function makeCanvas(): EventTarget {
             setProperty: () => undefined,
             getPropertyValue: () => '',
         },
+
         getContext: (type: string) => (type === '2d' ? make2DContext() : null),
+
         getBoundingClientRect: () => ({
             left: 0,
             top: 0,
@@ -257,6 +285,7 @@ function makeCanvas(): EventTarget {
             width: DISPLAY_SIZE.x,
             height: DISPLAY_SIZE.y,
         }),
+
         setPointerCapture: () => undefined,
         releasePointerCapture: () => undefined,
     });

@@ -96,6 +96,7 @@ export function applyFadeToRange(
 
         // eslint-disable-next-line security/detect-object-injection -- localIdx derived from loop bounds
         const snap = snapshot[localIdx];
+
         // eslint-disable-next-line security/detect-object-injection -- localIdx derived from loop bounds
         const tgt = targets[localIdx];
 

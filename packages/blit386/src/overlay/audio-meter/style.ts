@@ -4,11 +4,22 @@ import { AUDIO_METER_DEFAULT_CLIP_IDX, AUDIO_METER_DEFAULT_WARNING_IDX } from '.
 
 /** Resolved palette indices used when drawing the overlay audio meter band. */
 export interface AudioMeterDrawStyle {
+    /** Level fill color below the warning threshold. */
     readonly levelBarIndex: number;
+
+    /** Full-height track color behind each bus bar. */
     readonly trackIndex: number;
+
+    /** Readout text color. */
     readonly textIndex: number;
+
+    /** Readout divider color. */
     readonly gapIndex: number;
+
+    /** Level fill color at or above the warning threshold. */
     readonly warningIndex: number;
+
+    /** Level fill color at or above the clip threshold. */
     readonly clipIndex: number;
 }
 

@@ -157,7 +157,8 @@ function panel(ctx, title) {
 function label(ctx, text, opts = {}) {
     const rowY = ctx.addRow(text.length * FONT_W, ROW_H);
 
-    // +1 vertically centers the 14-pixel font inside the 16-pixel row.
+    // +1 drops the text one pixel into its 10-pixel row (ROW_H in ui-core.js), which is
+    // shorter than the 14-pixel font cell.
     ctx.addCommand(CMD_TEXT, ctx.pad, rowY + 1, 0, 0, roleSlot(opts.color), text);
 }
 

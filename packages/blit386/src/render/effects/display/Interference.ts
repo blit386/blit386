@@ -9,7 +9,7 @@ import { FullscreenEffect } from '../FullscreenEffect';
  * frame, producing a buzzing-noise feel.
  *
  * Display-tier. Drives jitter from {@link time}; demos typically pass
- * `BT.ticks / BT.targetFPS`.
+ * `BT.timeSeconds`.
  *
  * @since 1.0.3
  */

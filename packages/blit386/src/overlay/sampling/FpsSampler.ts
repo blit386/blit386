@@ -6,10 +6,13 @@ import { MS_PER_SECOND, OVERLAY_EMA_SMOOTHING } from './constants';
  * Not the configured fixed-update rate; measures actual `requestAnimationFrame` cadence.
  */
 export class FpsSampler {
+    /** `performance.now()` at the previous sample, or `null` before the first one. */
     #lastSampleMs: number | null = null;
 
+    /** EMA of the instantaneous frame rate, or `null` before the first sample. */
     #smoothedFps: number | null = null;
 
+    /** Configured rate the readout starts from and falls back to. */
     readonly #targetFps: number;
 
     /**

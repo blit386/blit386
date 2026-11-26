@@ -1,4 +1,5 @@
 /** Maintainer dogfood configs, Cursor's hand-maintained hooks, and the Claude hook wiring. Part of `agents:check`. */
+
 import { spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, readdirSync, realpathSync } from 'node:fs';
 import { basename, dirname, join } from 'node:path';
@@ -160,6 +161,7 @@ export function findMaintainerConfigFailures(spec, content, disk = {}) {
             }
 
             const server = /** @type {Record<string, unknown>} */ (container[PROJECT_MCP_SERVER_NAME] ?? {});
+
             const urlValue = server[spec.mcp.urlKey];
 
             if (urlValue !== PROJECT_MCP_SERVER_URL) {
@@ -279,6 +281,7 @@ function readMaintainerHookSymlinkEntry(root, kitHooksDir, relPath) {
 export function checkMaintainerAgentConfigs(root) {
     // Resolved once: link targets come from realpathSync, so a symlinked root (macOS /tmp) must not skew the compare.
     const kitHooksDir = realpathSyncIfExists(join(root, 'packages', 'kit', 'content', 'hooks'));
+
     /** @type {string[]} */
     const failures = [];
 
@@ -291,6 +294,7 @@ export function checkMaintainerAgentConfigs(root) {
     for (const spec of MAINTAINER_CONFIG_SPECS) {
         const abs = join(root, spec.path);
         const content = readFileIfExists(abs);
+
         /** @type {{ isSymlink?: boolean | null }} */
         const disk = {};
 

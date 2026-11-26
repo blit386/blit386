@@ -2,9 +2,9 @@
  * Shared URL hint helpers for beginner-friendly "can't find this file" error
  * messages.
  *
- * Used by `BitmapFont` and the `AudioClip` error message builders so the
- * explicit-location check, folder hint, and extension-parsing logic are
- * defined once instead of duplicated per asset type.
+ * Used by `AssetLoader`, the `.btfont` loader (`btfontFile`), and the audio
+ * error message builders so the explicit-location check, folder hint, and
+ * extension-parsing logic are defined once instead of duplicated per asset type.
  */
 
 /** URL scheme prefixes that already point at an explicit location. */

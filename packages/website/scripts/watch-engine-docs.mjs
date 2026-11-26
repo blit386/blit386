@@ -11,6 +11,7 @@
  * ENGINE_DOCS_DIR environment variable when set, otherwise the sibling
  * package path `../blit386/docs`.
  */
+
 import { spawn } from 'node:child_process';
 import { watch } from 'node:fs';
 import { dirname, resolve } from 'node:path';

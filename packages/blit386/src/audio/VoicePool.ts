@@ -52,7 +52,7 @@ export interface SoundRef {
     readonly generation: number;
 }
 
-/** Inert handle returned when a voice could not be allocated (pool exhausted, or not yet attached). */
+/** Inert handle returned when no voice was started (pool exhausted, audio still locked, or not attached). */
 export const INVALID_SOUND_REF: SoundRef = { voiceIndex: -1, generation: -1 };
 
 /**
@@ -160,6 +160,7 @@ export class VoicePool {
      */
     constructor(audioManager: AudioManager, voiceCount: number) {
         this.audioManager = audioManager;
+
         this.slots = Array.from({ length: voiceCount }, () => createEmptySlot());
     }
 
@@ -544,6 +545,7 @@ export class VoicePool {
 
         if (options.fadeInMs !== undefined && options.fadeInMs > 0) {
             gain.gain.value = 0;
+
             applyAudioParamRamp(gain.gain, atTime, targetVolume, options.fadeInMs, 'linear');
         } else {
             gain.gain.value = targetVolume;

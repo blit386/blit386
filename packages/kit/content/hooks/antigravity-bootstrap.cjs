@@ -3,7 +3,8 @@
 // work run once per conversation. The marker lives in the OS temp dir (nothing lands in the project) and is
 // written before the work, so a failure is not retried on every later call.
 // Installs dependencies when node_modules is missing, runs `blit doctor`, and reports through injectSteps.
-// First argument: the package manager's install command (the manifest always passes it). Never blocks: every error ends in an empty `{}`.
+// First argument: the package manager's install command (the manifest always passes it). Never blocks: every error
+// ends in an empty `{}`.
 // .cjs so it stays CommonJS when a parent package.json sets "type": "module".
 
 const { createHash } = require('node:crypto');

@@ -23,7 +23,10 @@ import { AGENT_KINDS, AGENT_SPECS, hasAgentFiles } from '../ownership';
 import { readManifest } from '../read-manifest';
 import { checkSyncDrift } from './agents-sync';
 
-/** Drift never sees a file the manifest did not track. */
+/**
+ * Warn for each set-up assistant whose docs-MCP config file is missing from disk. A check of its own because drift
+ * never sees a file the manifest did not track.
+ */
 function checkDocsMcp(root: string, out: (line: string) => void): void {
     // checkSyncDrift already reports a missing or damaged manifest, so this check stays quiet about it.
     const result = readManifest(root, () => {});
@@ -57,7 +60,8 @@ function checkDocsMcp(root: string, out: (line: string) => void): void {
 }
 
 /**
- * Runs a BLIT386 environment and project checkup, reporting configuration issues and compatibility warnings to standard output.
+ * Runs a BLIT386 environment and project checkup, reporting configuration issues and compatibility warnings to
+ * standard output.
  */
 export function runDoctor(): void {
     const out = (line: string): void => {

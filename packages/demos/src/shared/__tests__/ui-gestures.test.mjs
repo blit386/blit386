@@ -3,6 +3,7 @@
  * `ctx.isInsideAnyWidget()` (both pure UiContext state/methods), so these tests drive it
  * directly through a bare UiContext - no BT stub needed, no theme, no begin()/end().
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

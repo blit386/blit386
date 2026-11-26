@@ -1,7 +1,7 @@
-/** Default palette indices when HUD named slots are unavailable. */
+/** Default palette index for overlay bar backgrounds when `OverlayStyle.barPaletteIndex` is unset. */
 export const DEFAULT_IDX_BG = 1;
 
-/** Default palette index for overlay system-font text. */
+/** Default palette index for overlay system-font text when `OverlayStyle.textPaletteIndex` is unset. */
 export const DEFAULT_IDX_TEXT = 2;
 
 /** System font glyph advance in pixels. */

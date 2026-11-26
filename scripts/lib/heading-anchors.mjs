@@ -13,11 +13,14 @@
  * handled; none occur in the docs today. Upgrade to a remark pass if a page starts using one.
  * Markup that does reach the slugger is harmless: it keeps only letters, digits, `-` and `_`.
  */
+
 import GithubSlugger from 'github-slugger';
 
 const FENCE_PATTERN = /^ {0,3}(?:```|~~~)/u;
+
 // Up to three spaces of indent, 1-6 hashes, the text, then an optional closing run of hashes.
 const HEADING_PATTERN = /^ {0,3}#{1,6}[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/u;
+
 // The page shows a link's text, not its target, so the id is built from the text alone.
 const LINK_PATTERN = /!?\[([^\]]*)\]\([^)]*\)/gu;
 

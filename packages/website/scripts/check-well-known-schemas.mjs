@@ -16,6 +16,7 @@
  * Usage:
  *   node scripts/check-well-known-schemas.mjs
  */
+
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -98,7 +99,7 @@ const OauthProtectedResourceSchema = z.object({
 });
 
 /**
- * One schema-validated well-known file: its repo-relative path (for error messages),
+ * One schema-validated well-known file: its path under `public/` (for error messages),
  * its path on disk under `public/.well-known`, and the zod schema it must satisfy.
  *
  * @typedef {{ label: string, path: string, schema: z.ZodType }} WellKnownFile

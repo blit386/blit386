@@ -56,7 +56,7 @@ export class PostProcessChain {
     private texBView: GPUTextureView | null = null;
 
     /**
-     * Creates a chain bound to a device, swap-chain format, render resolution,
+     * Creates a chain bound to a device, attachment format, render resolution,
      * and tier.
      *
      * No GPU resources are created until the first effect is registered.
@@ -92,9 +92,8 @@ export class PostProcessChain {
      * The effect's {@link Effect#init} is called once and only on success is
      * the effect appended to the chain. GPU resources for the chain itself
      * are allocated lazily here: {@link texA} on the first add, {@link texB}
-     * on the second. Existing offscreen textures are **reused** across
-     * remove/re-add cycles - we never reallocate a texture that is already
-     * present.
+     * on the second. A texture that already exists is reused, never
+     * reallocated; both are destroyed only when the chain empties.
      *
      * Adding the same effect instance twice throws. Construct a new instance
      * if you want a second copy of the same look.

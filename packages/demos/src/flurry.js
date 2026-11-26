@@ -597,8 +597,9 @@ class Demo {
             // Instantaneous velocity = the derivative of the position formula:
             //   d/dt [sin(t * f + p)] = cos(t * f + p) * f
             //   d/dt [cos(t * f + p)] = -sin(t * f + p) * f
-            // Dividing by TARGET_FPS converts "per second" to "per tick", the same
-            // constant that drives animTime in update(), so the two stay in sync.
+            // Dividing by TARGET_FPS converts "per second" to "per tick". animTime in
+            // update() grows by BT.deltaSeconds, which is 1 / TARGET_FPS, so the two stay
+            // in sync.
             spark.vx =
                 (Math.cos(this.animTime * spark.freqX + spark.phaseX) * spark.freqX * FIELD_RANGE * 0.8) / TARGET_FPS;
             spark.vy =

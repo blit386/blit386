@@ -111,7 +111,7 @@ const STREAM_PANEL_X = 160;
 const STREAM_PANEL_W = 156;
 const PANEL_CONTENT_X = 9;
 
-// The Seeds panel holds two short buttons side by side, then one full-width button.
+// The New seed panel holds two short buttons side by side, then one full-width button.
 // The kit stacks a group's rows, so the panel reserves the space with empty rows and
 // each button is placed with its own tiny group on top of it. A group pinned with pad 0
 // starts its first row 5 pixels above the y it is given, hence PINNED_ROW_SHIFT.
@@ -302,9 +302,9 @@ class Demo {
     //
     // It cannot be the shared BT.random, because generateWorld() reseeds that one.
     // Drawing the next seed from a stream we just reseeded makes the answer a fixed
-    // consequence of the seed we reseeded it with - so "Copy left seed" followed by "New
-    // right" would hand back the very same number every time, and the button would look
-    // broken.
+    // consequence of the seed we reseeded it with - so "E Copy left -> right" followed by
+    // "W Right" would hand back the very same number every time, and the button would
+    // look broken.
     /** @type {Random | null} */
     seedPicker = null;
 
@@ -558,7 +558,7 @@ class Demo {
 
         // A fork is a brand new stream, so the engine refuses to claim it was seeded by
         // us - its seedValue is deliberately left undefined, which the panel shows as
-        // "unknown".
+        // "none".
         this.streams.forkSeed = forked.seedValue;
     }
 }

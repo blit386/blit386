@@ -9,7 +9,7 @@
 
 /**
  * Parse the demo list serialized into the page by the build (see plugins/virtual-demos.js).
- * Already filtered to nav-visible demos, in canonical order.
+ * Every registry entry, in canonical `DEMO_ORDER` order.
  * @returns {Array<{slug: string, navLabel: string, title: string}>}
  */
 export function readDemoList() {

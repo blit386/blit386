@@ -2,7 +2,7 @@
  * Package-manager detection for the scaffolder.
  *
  * When a user runs `npm create blit386` / `pnpm create blit386` / `yarn create blit386`, the invoking manager
- * is reported in `npm_config_user_agent`. We use it so the generated project, lockfile, and printed commands match
+ * is reported in `npm_config_user_agent`. It is read so the generated project, lockfile, and printed commands match
  * whatever the user already has.
  */
 
@@ -10,20 +10,28 @@ export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
 export interface PmHints {
     name: PackageManager;
+
     /** Command a human types to install dependencies, e.g. "npm install". */
     installCmd: string;
+
     /** Command a human types to start the dev server, e.g. "npm run dev". */
     runDevCmd: string;
+
     /** Command a human types to build for production, e.g. "npm run build". */
     runBuildCmd: string;
+
     /** Command a human types to format source, e.g. "npm run format". */
     runFormatCmd: string;
+
     /** Command a human types to lint source, e.g. "npm run lint". */
     runLintCmd: string;
+
     /** CI install that fails on a stale lockfile, e.g. "npm ci". */
     ciInstallCmd: string;
+
     /** CI step that makes the manager available on a runner: Corepack, or a global install for bun. */
     ciPrepareCmd: string;
+
     /** Argument list to spawn the manager's install, e.g. ["install"] ([] for yarn). */
     installArgs: string[];
 }

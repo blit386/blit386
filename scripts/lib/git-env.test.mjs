@@ -95,10 +95,13 @@ describe('gitEnv', () => {
 describe('gitEnv against an inherited GIT_DIR', () => {
     /** @type {string} */
     let decoyRoot;
+
     /** @type {string} */
     let decoyConfig;
+
     /** @type {string} */
     let decoyWorktreeGitDir;
+
     /** @type {string} */
     let pristineConfig;
 

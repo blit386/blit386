@@ -91,8 +91,9 @@ function dpadIsPressed(dir) {
 }
 
 /**
- * Draws one arrow glyph as a stack of thin filled rectangles (the system font has no arrow
- * characters). A triangle is just rows that get wider away from the tip.
+ * Draws one arrow glyph as a stack of thin filled rectangles, sized to the key (the
+ * system font's arrow characters are one small fixed size). A triangle is just rows that
+ * get wider away from the tip.
  *
  * @param {import('./ui-core.js').UiContext} ctx - The shared UI context (for its scratch rect).
  * @param {'up' | 'down' | 'left' | 'right'} dir - Which way the triangle points.
@@ -221,7 +222,7 @@ function drawKey(ctx, dir, baseX, baseY, step, size) {
     rec.w = size;
     rec.h = size;
 
-    // Mark it alive this frame, or the next frame's first begin() prunes it.
+    // Mark it alive this frame, or the next frame's startFrame() prunes it.
     ctx.frameHitIds.add(id);
 }
 

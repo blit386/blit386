@@ -19,7 +19,7 @@ export const DEFAULT_PALETTE_SWATCH_SIZE = 7;
 /** Horizontal and vertical gap between swatches in pixels. */
 export const PALETTE_SWATCH_GAP_PX = 1;
 
-/** Padding below the swatch grid inside the bottom band. */
+/** Padding above and below the swatch grid inside the bottom band. */
 export const PALETTE_GRID_PADDING_PX = 3;
 
 /** Minimum palette scrollbar thumb height in pixels (macOS-style overlay scroll indicator). */
@@ -131,8 +131,8 @@ export function resolveGridVisibleRows(totalRows: number, maxVisibleRows?: numbe
  *
  * @param displayWidth - Logical display width in pixels.
  * @param swatchSize - Side length of each swatch (default {@link DEFAULT_PALETTE_SWATCH_SIZE}).
- * @param colorCount - Number of palette slots to show (default 256).
- * @param gap - Gap between swatches (default 1).
+ * @param colorCount - Number of palette slots to show (default {@link MAX_PALETTE_SIZE}).
+ * @param gap - Gap between swatches (default {@link PALETTE_SWATCH_GAP_PX}).
  * @param maxColumns - Optional cap from {@link HardwareSettings#overlayPaletteColumns}.
  * @param maxVisibleRows - Optional cap from {@link HardwareSettings#overlayPaletteRowsVisible}.
  * @returns Grid dimensions and viewport band height.
@@ -167,7 +167,7 @@ const gridDrawScratch = {
 };
 
 /**
- * Writes the filled marker rect for an unused swatch into {@link target}.
+ * Writes the filled marker rect for an unused swatch into `target`.
  *
  * @param target - Reusable rect mutated in place.
  * @param x - Swatch left edge in display pixels.
@@ -218,7 +218,8 @@ function drawUnusedSwatch(
 }
 
 /**
- * Returns whether a palette slot was referenced by demo draw calls this frame.
+ * Returns whether a palette slot was referenced by demo draw calls this frame. Slot 0 (transparent) always reads
+ * as unused.
  *
  * @param usedMask - Per-frame usage mask from BTAPI.
  * @param index - Palette slot to query.
@@ -262,7 +263,7 @@ function drawSwatch(
 }
 
 /**
- * Writes the top-left corner of a palette swatch into {@link target}.
+ * Writes the bounds of a palette swatch into `target`; rows above `scrollRowOffset` land above the band.
  *
  * @param target - Reusable rect mutated in place.
  * @param index - Palette slot index.
@@ -332,7 +333,7 @@ function drawSwatchGrid(
 /**
  * Computes macOS-style thumb height: visible fraction of total rows, clamped to the track.
  *
- * @param trackHeight - Full palette band height in pixels.
+ * @param trackHeight - Scrollbar track height in pixels.
  * @param grid - Precomputed grid layout.
  * @returns Thumb height in pixels, or `0` when inputs are invalid.
  */
@@ -434,6 +435,7 @@ function drawScrollbar(
  * Live palette swatch renderer for the overlay bottom band.
  */
 export class PaletteView {
+    /** Whether the palette band is configured; fixed at construction. */
     readonly #isEnabled: boolean;
 
     /**

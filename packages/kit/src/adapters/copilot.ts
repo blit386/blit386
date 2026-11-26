@@ -19,7 +19,10 @@ import {
 /** One command entry in a Copilot hooks file (`.github/hooks/*.json`). */
 interface CopilotHookCommand {
     type: 'command';
-    /** Always the repository root: Copilot resolves `cwd` against it, so the relative script paths hold wherever the session started. */
+    /**
+     * Always the repository root: Copilot resolves `cwd` against it, so the relative script paths hold wherever the
+     * session started.
+     */
     cwd: '.';
     bash: string;
     /** The same Node command: Windows runs this key, and the cloud agent runs only `bash`. */
@@ -64,12 +67,13 @@ function buildCopilotHooks(
 }
 
 /**
- * GitHub Actions pins shared with create-blit386's optional CI template (`templates/optional/ci/github/workflows/ci.yml`).
- * The kit cannot read that template, so these are a copy. Renovate bumps them with the template and the repo's own
- * `.github/workflows/` in one "github actions" PR (`renovate.json`: the template path in the github-actions manager, a
- * regex custom manager on this file). Keep the `'owner/name@sha # vN'` string shape - the regex reads it.
- * create-blit386's `test/agent-copilot.test.mjs` fails when these drift from the template, and its
- * `test/ci-pins.test.mjs` when the template drifts from the repo workflows.
+ * GitHub Actions pins shared with create-blit386's optional CI template
+ * (`templates/optional/ci/github/workflows/ci.yml`). The kit cannot read that template, so these are a copy. Renovate
+ * bumps them with the template and the repo's own `.github/workflows/` in one "github actions" PR (`renovate.json`:
+ * the template path in the github-actions manager, a regex custom manager on this file). Keep the
+ * `'owner/name@sha # vN'` string shape - the regex reads it. create-blit386's `test/agent-copilot.test.mjs` fails
+ * when these drift from the template, and its `test/ci-pins.test.mjs` when the template drifts from the repo
+ * workflows.
  */
 const ACTIONS_CHECKOUT = 'actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6';
 const ACTIONS_SETUP_NODE = 'actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6';

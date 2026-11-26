@@ -5,16 +5,15 @@
  * produces it. Shared by `packages/demos` and `packages/website`, which hit this in different
  * ways: `packages/demos/vite.config.js` imports `blit386/vite` at the top of the file,
  * unconditionally, so `dev`, `build`, `preview`, and `knip` (which loads `vite.config.js` via its
- * own Vite plugin) all crash before that import is even reached - so does the engine's own `knip`,
- * which loads that config too; `packages/website`'s Twoslash
- * pipeline compiles docs samples against the workspace engine (BT-414), so its `test` and `build`
- * fail inside that compilation with TS2307 instead. Run before any of those so the failure
+ * own Vite plugin) all crash on that import - so does the engine's own `knip`, which loads that
+ * config too; `packages/website`'s Twoslash pipeline compiles docs samples against the workspace
+ * engine (BT-414), so its `test` and `build` fail inside that compilation with TS2307 instead. Run before any of those so the failure
  * self-heals instead of surfacing as a confusing "Cannot find module" error partway through
  * `git push`.
  *
  * Also rebuilds when `dist/` exists but is stale - older than anything in the build's inputs: the
  * `packages/blit386/src` tree plus `vite.config.ts`, `vite.node.config.ts`, `package.json`, and
- * `tsconfig.json`. The engine bundles from roughly 250 source files under `src/`, any one of which
+ * `tsconfig.json`. The engine bundles from a couple of hundred source files under `src/`, any one of which
  * can change the public API, so - unlike a single-entry proxy that could miss a change to a file it
  * doesn't happen to re-export through - the whole tree is walked for its newest mtime; the config
  * files are single stats, since an alias or `exports` change there alters `dist/` just as a source
@@ -33,6 +32,7 @@
  * Usage (from a package directory):
  *   node ../../scripts/ensure-engine-built.mjs
  */
+
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';

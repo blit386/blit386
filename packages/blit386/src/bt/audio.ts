@@ -83,7 +83,8 @@ export const audio = {
      *
      * Returns an inert {@link SoundRef} without allocating a voice when the clip hasn't finished
      * loading yet (or was already unloaded), when the pool has no free or stealable voice at this
-     * priority, or before the engine has unlocked audio playback.
+     * priority, before the engine has unlocked audio playback, or while {@link BT.renderAt} steps
+     * through a seek.
      *
      * @since 1.3.0
      * @param clip - Loaded audio clip to play.

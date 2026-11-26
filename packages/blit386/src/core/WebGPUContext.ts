@@ -53,7 +53,6 @@ export async function initWebGPU(
         return null;
     }
 
-    // Request adapter.
     const adapter = await navigator.gpu.requestAdapter();
 
     if (!adapter) {
@@ -67,7 +66,6 @@ export async function initWebGPU(
         throw new Error(WEBGPU_ADAPTER_MESSAGE);
     }
 
-    // Drawing buffer = configured size when provided, else logical size.
     const drawingBufferSize = configuredDrawingBufferSize ?? displaySize;
     const adapterLimit = adapter.limits?.maxTextureDimension2D;
     const adapterLogicalError = validateWebGPUTextureDimension('displaySize', displaySize, adapterLimit);
@@ -83,7 +81,6 @@ export async function initWebGPU(
         throw new RenderDimensionLimitError(adapterDimensionError);
     }
 
-    // Request device.
     let device: GPUDevice;
 
     try {

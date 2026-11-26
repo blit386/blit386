@@ -2,6 +2,7 @@
  * The pure half of the capture engine: URL building, tick math, pointer mapping, and the
  * per-pose state machine driven through a fake frame adapter.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { runInNewContext } from 'node:vm';

@@ -174,6 +174,7 @@ class Game {
         // Move each block down, then decide: caught, missed, or still falling.
         /** @type {Vector2i[]} */
         const stillFalling = [];
+
         for (const item of this.items) {
             item.y += ITEM_FALL_SPEED;
             const itemRect = new Rect2i(item.x, item.y, ITEM_SIZE, ITEM_SIZE);

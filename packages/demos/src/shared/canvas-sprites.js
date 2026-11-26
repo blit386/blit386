@@ -2,7 +2,8 @@
  * Shared helpers for demos that draw their sprite art on an offscreen canvas
  * at startup instead of loading a PNG file.
  *
- * The recipe (used by the Sprites and Animation demos) goes:
+ * The recipe (used by the Animation and Nine-Slice Panels demos; Bunnymark uses only
+ * canvasToImage()) goes:
  *
  *   1. Draw shapes onto an OffscreenCanvas with normal browser drawing calls.
  *   2. registerCanvasColors() - read the pixels back and give every unique
@@ -10,8 +11,8 @@
  *   3. canvasToImage() - turn the canvas into an Image the engine can upload
  *      to the GPU as a SpriteSheet.
  *
- * Both demos used to carry identical private copies of these two functions;
- * they now import this one file instead.
+ * Those demos import this one file instead of each carrying a private copy of these
+ * two functions.
  */
 
 import { Color32 } from 'blit386';

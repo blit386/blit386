@@ -195,7 +195,8 @@ export class PaletteController {
      * @param start - First palette index in the cycling range (inclusive). Must be 1 or higher.
      * @param end - Last palette index in the cycling range (inclusive). Must be below the palette size.
      * @param speed - Steps per second. Positive = forward, negative = backward.
-     * @throws If no palette is set, `start` is 0, or `end` is past the palette.
+     * @throws If no palette is set, `speed` is not finite, `start` or `end` is not an integer, `start` is 0 or not
+     *   below `end`, or `end` is past the palette.
      */
     public paletteCycle(start: number, end: number, speed: number): void {
         const palette = this.getPalette();
@@ -225,6 +226,7 @@ export class PaletteController {
      * @param target - Target palette to fade toward.
      * @param durationMs - Fade duration in milliseconds.
      * @param easing - Easing curve. Defaults to `'linear'`.
+     * @throws If no palette is set or `durationMs` is not a non-negative finite number.
      */
     public paletteFade(target: Palette, durationMs: number, easing?: EasingFunction): void {
         const palette = this.getPalette();
@@ -247,6 +249,7 @@ export class PaletteController {
      * @param target - Target palette to fade toward.
      * @param durationMs - Fade duration in milliseconds.
      * @param options - Highlight lead and easing curve.
+     * @throws If no palette is set or `durationMs` is not a non-negative finite number.
      */
     public paletteFadeExposure(target: Palette, durationMs: number, options?: ExposureFadeOptions): void {
         const palette = this.getPalette();

@@ -107,7 +107,7 @@ function readPlatformPreference(): boolean {
  * no-ops on platforms that do not expose `matchMedia`.
  */
 export class ReducedMotion {
-    /** Demo callback for preference changes, or null when the demo omitted the hook. */
+    /** Preference-change callback from {@link attach}; null before attach and after {@link detach}. */
     private onChange: ChangeHandler | null = null;
 
     /** Bound `change` handler so it can be removed in {@link detach}. */

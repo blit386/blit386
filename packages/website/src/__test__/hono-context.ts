@@ -41,12 +41,16 @@ interface MockContext {
 export interface MockContextOptions {
     /** Full request URL; `c.req.url`, `c.req.path`, and `c.req.raw` all derive from it. */
     url?: string;
+
     method?: string;
     headers?: Record<string, string> | undefined;
+
     /** Raw request body. Pass malformed JSON to exercise a real parse failure. */
     body?: string;
+
     /** Worker bindings surfaced as `c.env`. Omit to model a request with no env at all. */
     env?: Record<string, unknown>;
+
     /**
      * Response the fake `next()` installs as `c.res`, standing in for a downstream handler.
      * Defaults to an HTML response with mutable headers.
@@ -56,8 +60,10 @@ export interface MockContextOptions {
 
 export interface MockContextHarness {
     context: MockContext;
+
     /** How many times the middleware under test called `next()`. */
     readonly nextCalls: number;
+
     /** Runs `middleware`; resolves to its Response, or `undefined` when it delegated. */
     run: (middleware: PluginMiddleware) => Promise<Response | undefined>;
 }

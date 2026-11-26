@@ -78,7 +78,7 @@ TRY THIS
 import { bootstrap, BT, Color32, Rect2i } from 'blit386';
 
 // The shared demo UI kit. applyTheme() installs the kit's twelve UI colors high in the
-// palette (slots 240-251, far above this demo's slots 1-9), and ui.* draws the title
+// palette (slots 240-251, far above this demo's slots 5-9), and ui.* draws the title
 // strip, the captions, and the Tips panel.
 import { applyTheme, defaultThemeSlot, FONT_W, PANEL_BOTTOM, PANEL_CONTENT_TOP, ui, UI_ANCHORS } from './shared/ui.js';
 

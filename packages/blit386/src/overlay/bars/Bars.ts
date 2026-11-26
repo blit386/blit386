@@ -10,17 +10,28 @@ import type { OverlayRowText } from '../types';
 
 /** Default bar and text palette indices for overlay drawing. */
 export interface OverlayBarStyle {
+    /** Bar fill palette index, used where a row sets no `barPaletteIndex`. */
     readonly barIndex: number;
+
+    /** Text palette index, used where a row sets no `textPaletteIndex`. */
     readonly textIndex: number;
 }
 
 /** What one custom row drew last frame; reused across frames so recording allocates nothing. */
 interface DrawnRow {
+    /** Left label as drawn. */
     leftText: string;
+
+    /** Left label X, in display pixels. */
     leftX: number;
+
     /** Empty when the row drew no right label. */
     rightText: string;
+
+    /** Right label X, in display pixels; stale when {@link rightText} is empty. */
     rightX: number;
+
+    /** Top Y of both labels, in display pixels. */
     y: number;
 }
 
@@ -28,12 +39,16 @@ interface DrawnRow {
  * Draws fixed and custom overlay bars and labels from a layout plan.
  */
 export class OverlayBars {
+    /** Pooled left-label positions, one per custom row. */
     readonly #customLeftPos: Vector2i[] = [];
 
+    /** Pooled right-label positions, one per custom row. */
     readonly #customRightPos: Vector2i[] = [];
 
+    /** Pooled records of what each custom row drew; only the first draw counts are live. */
     readonly #drawnRows: DrawnRow[] = [];
 
+    /** Live entries in {@link #drawnRows} for the last frame. */
     #drawnCount = 0;
 
     /**
@@ -88,7 +103,7 @@ export class OverlayBars {
     }
 
     /**
-     * Draws the palette band background fill when the overlay body is visible.
+     * Draws the palette band background fill when the plan reserves a palette band.
      *
      * @param target - Overlay draw target.
      * @param plan - Computed layout plan.

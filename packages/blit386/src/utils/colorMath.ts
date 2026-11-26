@@ -44,8 +44,7 @@ for (let i = 0; i < 256; i++) {
  * @returns Integer in range 0-255.
  */
 export function clampByte(n: number): number {
-    // Bitwise operations: if n < 0, use 0; if n > 255, use 255; else truncate n.
-    // This is faster than Math.max(0, Math.min(255, n)) | 0.
+    // Chained ternaries plus `| 0` truncation; faster than Math.max(0, Math.min(255, n)) | 0.
     return n < 0 ? 0 : n > 255 ? 255 : n | 0;
 }
 

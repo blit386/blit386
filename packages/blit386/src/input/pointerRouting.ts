@@ -133,7 +133,6 @@ export function routeDown(ctx: PointerRouter, event: PointerEvent): void {
     const slotIndex = allocateTouchSlot(ctx);
 
     if (slotIndex === -1) {
-        // All touch slots are full; drop this event silently.
         return;
     }
 

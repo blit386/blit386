@@ -461,6 +461,7 @@ describe('getLastModified', () => {
         const editDate = '2026-03-02T09:00:00+01:00';
         const renameDate = '2026-04-20T09:00:00+01:00';
         const renameRepo = mkdtempSync(join(tmpdir(), 'sync-docs-rename-'));
+
         /** @type {(message: string, date: string) => void} */
         const commit = (message, date) => {
             execFileSync('git', ['commit', '--quiet', '-m', message], {
@@ -587,6 +588,7 @@ describe('assertFullHistory', () => {
     const shallowParent = mkdtempSync(join(tmpdir(), 'sync-docs-shallow-'));
     const shallowRepo = join(shallowParent, 'clone');
     const nonRepoDir = mkdtempSync(join(tmpdir(), 'sync-docs-history-non-git-'));
+
     /** @param {string[]} args @param {string} cwd */
     const git = (args, cwd) => execFileSync('git', args, { cwd, env: gitEnv(), stdio: 'ignore' });
 

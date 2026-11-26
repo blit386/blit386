@@ -1,8 +1,8 @@
 /**
  * `blit` - the project-local BLIT386 helper CLI.
  *
- * Commands: run | play | bundle | doctor | upgrade | migrate | agents | clean | help. Kept tiny and beginner-friendly; see ./messages
- * for the voice.
+ * Commands: run | play | bundle | doctor | upgrade | migrate | agents | clean | help. Kept tiny and beginner-friendly;
+ * see ./messages for the voice.
  */
 
 import { runAgents } from './commands/agents';

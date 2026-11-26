@@ -257,6 +257,9 @@ function buildUpbeatBuffer() {
 }
 
 /**
+ * The calm loop with a one-shot riser in front of it. `loopStart` / `loopEnd` are in seconds
+ * and bracket the calm section, so a player can play the riser once and then loop the rest.
+ *
  * @returns {{ buffer: Float32Array, loopStart: number, loopEnd: number }}
  */
 function buildIntroLoopBuffer() {

@@ -10,6 +10,7 @@
  * Usage:
  *   node scripts/check-api-getters-drift.mjs
  */
+
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +24,7 @@ const RULE_FILE_PATH = join(ROOT, '.claude', 'rules', 'bt-api-getters.md');
 const HARDWARE_SETTINGS_FILE = join(ROOT, 'src', 'core', 'IBTDemo.ts');
 const HARDWARE_SETTINGS_INTERFACE = 'HardwareSettings';
 const TIER_B_ROW_MARKER = '**B** Configure flags';
+
 /** Boolean-flag naming prefixes governed by the Tier A / Tier B convention. */
 const FLAG_NAME_PATTERN = /^(is|has)[A-Z]/;
 
@@ -172,10 +174,13 @@ export function findMissingTierBMentions(flagNames, ruleContent) {
 
 /** Prefix `enumerateSymbols` puts on `BT` namespace members. */
 const BT_MEMBER_PREFIX = 'BT.';
+
 /** Rule-file section that must list every `BT` getter. */
 const GETTERS_HEADING = '## Prefer getters';
+
 /** Rule-file section that must list every `BT` method. */
 const METHODS_HEADING = '## Keep as methods';
+
 /** Section each naming-relevant kind must be listed under. */
 const HEADING_BY_KIND = new Map([
     ['getter', GETTERS_HEADING],
@@ -226,7 +231,7 @@ export function extractSection(ruleContent, heading) {
  * @returns {Set<string>} The mentioned names.
  */
 function mentionedNames(sectionText) {
-    return new Set([...sectionText.matchAll(/`([a-z][A-Za-z0-9]*)(?:`|\()/g)].map((match) => match[1]));
+    return new Set([...sectionText.matchAll(/`([a-z][A-Za-z0-9]*)[`(]/g)].map((match) => match[1]));
 }
 
 /**
@@ -284,18 +289,23 @@ const NAMING_RELEVANT_KINDS = new Set(['method', 'getter']);
 function main() {
     const program = createRepoProgram();
     const symbols = enumerateSymbols(program, ENTRY_FILE);
+
     const namingRelevantNames = Object.entries(symbols)
         .filter(([, info]) => NAMING_RELEVANT_KINDS.has(info.kind))
         .map(([name]) => name);
+
     const memberNames = deriveBtMemberNames(namingRelevantNames);
     const ruleContent = readFileSync(RULE_FILE_PATH, 'utf8');
+
     const memberKinds = new Map(
         Object.entries(symbols)
             .filter(([name]) => name.startsWith(BT_MEMBER_PREFIX))
             .map(([name, info]) => [name.slice(BT_MEMBER_PREFIX.length), info.kind]),
     );
+
     const failures = findSectionDrift(memberKinds, ruleContent);
     const flagNames = enumerateHardwareSettingsFlags(program);
+
     const flagFailures =
         flagNames.length === 0
             ? [

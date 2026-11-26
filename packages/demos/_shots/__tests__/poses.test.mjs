@@ -1,6 +1,7 @@
 /**
  * The pose table drives every capture; a malformed entry would silently produce wrong tiles.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

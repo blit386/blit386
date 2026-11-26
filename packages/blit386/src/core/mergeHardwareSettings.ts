@@ -10,7 +10,7 @@ import { keyboardLayoutUnknownWarning } from '../utils/errorMessages';
 import { Vector2i } from '../utils/Vector2i';
 import { type HardwareSettings, KEYBOARD_LAYOUTS, type KeyboardLayout } from './IBTDemo';
 
-/** Default SFX voice slot count; read by {@link defaultConfig} and the audio attach fallback in `BTAPI`. */
+/** Default SFX voice slot count; read by {@link defaultConfig} and the audio attach fallback in `Subsystems.attachAudioSubsystem`. */
 export const DEFAULT_AUDIO_VOICES = 16;
 
 /** Most SFX voice slots `HardwareSettings.audioVoices` may ask for; `BT.init()` rejects more. */

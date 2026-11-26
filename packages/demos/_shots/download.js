@@ -11,6 +11,7 @@ function downloadBlob(name, blob) {
     link.href = URL.createObjectURL(blob);
     link.download = name;
     link.click();
+
     // Some browsers start the download asynchronously; revoking in the same tick can empty it.
     setTimeout(() => URL.revokeObjectURL(link.href), 0);
 }

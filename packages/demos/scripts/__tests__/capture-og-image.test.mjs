@@ -4,6 +4,7 @@
  * Everything here is argv-in/plain-data-out or string-out, so nothing touches a browser,
  * ffmpeg, or the filesystem.
  */
+
 import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';

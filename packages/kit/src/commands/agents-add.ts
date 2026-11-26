@@ -44,7 +44,7 @@ export function runAddAgent(root: string, agent: AgentKind, out: (line: string) 
     // A user-owned generated file (`.claude/launch.json`) that already exists is the user's: drop it
     // here so it is neither a collision that aborts the setup nor overwritten below. A path the
     // manifest already tracks can only be a shared one another assistant set up (the agent's own
-    // paths are untracked, or `hasAgentFiles` would have stopped us above); `sync` keeps those fresh,
+    // paths are untracked, or `hasAgentFiles` would have returned early above); `sync` keeps those fresh,
     // so `add` leaves them alone rather than clobbering an edited copy.
     const generated = generateAgentFiles(kr, vars, [agent]).filter(
         (file) =>
@@ -86,9 +86,9 @@ export function runAddAgent(root: string, agent: AgentKind, out: (line: string) 
         return { ...unmerged, content: mergedContent };
     });
 
-    // Setting up the assistant must be all-or-nothing: if we wrote only the non-colliding files, the
-    // assistant would be half-present, and a later `sync` would regenerate the colliding path, find no
-    // manifest entry, and overwrite the very user file we are protecting here. So if anything still
+    // Setting up the assistant must be all-or-nothing: writing only the non-colliding files would leave the
+    // assistant half-present, and a later `sync` would regenerate the colliding path, find no manifest
+    // entry, and overwrite the very user file this check protects. So if anything still
     // collides after the merge attempt above, save the kit versions beside the originals and stop
     // without touching the project or the manifest.
     const collisions = preparedGenerated.filter(

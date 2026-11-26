@@ -8,7 +8,7 @@ interface DemoEmbedProps {
 }
 
 // The demos site isn't running in production during `waku dev`, so local development
-// targets the demos repo's own dev server (`cd blit386-demos && pnpm run dev`) instead.
+// targets the demos package's own dev server (`pnpm --filter blit386-demos run dev`) instead.
 const DEMO_SRC = import.meta.env.DEV
     ? (demo: string) => `http://localhost:5173/demos/${demo}.html?embed`
     : (demo: string) => `https://demos.blit386.dev/${demo}?embed`;

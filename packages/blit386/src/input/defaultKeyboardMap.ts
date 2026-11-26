@@ -91,7 +91,7 @@ export const DEFAULT_KEYBOARD_SINGLE_PLAYER2: Readonly<Record<FaceButtonCode, re
 /**
  * Deep-copies default face-button rows into a mutable map (`button` → `KeyboardEvent.code` list).
  *
- * Used by {@link BT.inputMapReset} so exported defaults are never mutated.
+ * Backs `BT.inputMapReset` (through {@link createDefaultKeyboardRuntimeMaps}), so exported defaults are never mutated.
  *
  * @param source - One player's default record (for example `DEFAULT_KEYBOARD_PLAYER1`).
  * @returns Map with face-button bit-flag keys and copied string arrays.

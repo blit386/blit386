@@ -13,6 +13,7 @@ import { DEPRECATIONS_URL, gitNag, ui } from '../messages';
 import { confirm } from '../prompt';
 import { migrateProject } from './migrate';
 
+/** True only when the major version went up; an unparsable version reads as no change. */
 function majorChanged(before: string, after: string): boolean {
     const beforeMajor = Number.parseInt(before.split('.')[0] ?? '', 10);
     const afterMajor = Number.parseInt(after.split('.')[0] ?? '', 10);

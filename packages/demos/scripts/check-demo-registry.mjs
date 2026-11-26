@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Enforce mutual consistency between demo files on disk, DEMO_ORDER, and VINTAGE_URLS.
+ * Enforce mutual consistency between demo files on disk, DEMO_ORDER, VINTAGE_URLS, the
+ * demo header tags, the README demo list, and the committed OG cards.
  * Failures exit 1 with clear messages - soft console.warns from buildRegistry are not
  * enough for CI / preflight.
  *
@@ -14,9 +15,12 @@
  * - No demo may use a reserved page path (RESERVED_SLUGS: the /shots gallery, the site index).
  * - Every demo carries a one-line `@description` header tag of a length that survives every
  *   social-card consumer intact (see DESCRIPTION_MIN_CHARS / DESCRIPTION_MAX_CHARS).
+ * - An `@ogScale` header tag, when present, names one of OG_SCALE_MODES.
  * - Every live slug appears exactly once in the `## Demos` list in README.md, and every
  *   demos.blit386.dev/<slug> link in that list resolves to a live slug.
+ * - Every demo has a committed `public/social/og-<slug>.png` card.
  */
+
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -45,6 +49,7 @@ const DESCRIPTION_MAX_CHARS = 104;
  */
 function listDiskSlugs() {
     const files = readdirSync(join(ROOT, 'src'));
+
     /** @type {string[]} */
     const slugs = [];
 
@@ -96,7 +101,7 @@ export function findDescriptionFailures(slug, description) {
     }
 
     // A period specifically, not any sentence-final mark: the documented rule says period, and
-    // 46 cards that punctuate the same way read better than a mix.
+    // cards that all punctuate the same way read better than a mix.
     if (!/\.$/.test(description)) {
         failures.push(`src/${slug}.js @description should end in a period`);
     }
@@ -132,6 +137,7 @@ export function findOgScaleFailure(slug, ogScale) {
 export function findVintageUrlFailures(vintageUrls, diskSlugSet, retiredSlugs) {
     /** @type {string[]} */
     const failures = [];
+
     const vintageTargets = new Set();
 
     for (const [vintageSlug, currentSlug] of Object.entries(vintageUrls)) {
@@ -176,6 +182,7 @@ export function findVintageUrlFailures(vintageUrls, diskSlugSet, retiredSlugs) {
 function findOrderBijectionFailures(diskSlugs, diskSlugSet) {
     /** @type {string[]} */
     const failures = [];
+
     const orderSeen = new Set();
 
     for (const slug of DEMO_ORDER) {
@@ -249,6 +256,7 @@ export function extractReadmeDemoSlugs(readmeText) {
 export function findReadmeListFailures(diskSlugs, readmeSlugs) {
     /** @type {string[]} */
     const failures = [];
+
     const diskSlugSet = new Set(diskSlugs);
     const occurrences = new Map();
 
@@ -298,6 +306,7 @@ export function findReservedSlugFailures(diskSlugs, reservedSlugs) {
 function findVintageKeyCollisions(diskSlugs, vintageUrls) {
     /** @type {string[]} */
     const failures = [];
+
     const vintageByKey = new Map(Object.entries(vintageUrls));
 
     for (const slug of diskSlugs) {

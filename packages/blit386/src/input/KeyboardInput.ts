@@ -38,8 +38,8 @@ export interface KeyboardAttachOptions {
 }
 
 /**
- * Tracks held keys using `KeyboardEvent.code`, snapshots once per frame for
- * edge detection (aligned with fixed-update timing via {@link endUpdate}), and
+ * Tracks held keys using `KeyboardEvent.code`, snapshots once per fixed update
+ * ({@link endUpdate}) for edge detection, and
  * accumulates filtered text from `keydown` (a canvas never receives `beforeinput`).
  */
 export class KeyboardInput {
@@ -68,8 +68,10 @@ export class KeyboardInput {
     /** Characters queued for {@link getInputString}; cleared in {@link endUpdate}. */
     private inputBuffer: string = '';
 
+    /** Canvas the key listeners are attached to, or `null` while detached. */
     private canvas: HTMLCanvasElement | null = null;
 
+    /** Tick source from {@link attach}, used to anchor repeats; `null` while detached. */
     private getTicks: (() => number) | null = null;
 
     /**
@@ -78,10 +80,13 @@ export class KeyboardInput {
      */
     private isCapturingScroll = false;
 
+    /** Bound `keydown` listener, kept so {@link detach} can remove it. */
     private readonly onKeyDown: (event: KeyboardEvent) => void;
 
+    /** Bound `keyup` listener, kept so {@link detach} can remove it. */
     private readonly onKeyUp: (event: KeyboardEvent) => void;
 
+    /** Bound canvas / window `blur` listener, kept so {@link detach} can remove it. */
     private readonly onBlur: () => void;
 
     /**
@@ -211,7 +216,7 @@ export class KeyboardInput {
      * Released edge for `code`.
      *
      * @param code - DOM key code string.
-     * @returns `true` on the frame the key transitions from down to up.
+     * @returns `true` when the key went up since the last {@link endUpdate}.
      */
     public isKeyReleased(code: string): boolean {
         if (this.pendingRelease.has(code)) {
@@ -363,7 +368,8 @@ export class KeyboardInput {
     }
 
     /**
-     * OR semantics: released if no key down now but at least one was down last frame.
+     * OR semantics: released if no mapped key is down now but at least one was down at the last update or went up
+     * since.
      *
      * @param codes - `KeyboardEvent.code` values for one logical button.
      * @returns `true` when the logical button transitions from down to up.

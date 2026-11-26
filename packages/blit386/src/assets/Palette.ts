@@ -175,7 +175,7 @@ export class Palette {
     /**
      * True when colors have been mutated since the last GPU upload.
      *
-     * Set by {@link set} and {@link copyFrom}. Cleared by {@link clearDirty} after
+     * Set by {@link set}, {@link copyFrom}, and {@link markDirty}. Cleared by {@link clearDirty} after
      * the renderer has uploaded the updated palette uniform buffer. Not set by the
      * constructor - initial upload is always triggered by `IRenderer.setPalette`.
      */
@@ -200,8 +200,8 @@ export class Palette {
      * buffer when it is set, then calls {@link clearDirty} to reset it. Palette
      * animation works automatically - no per-frame {@link BT.paletteSet} required.
      *
-     * @returns `true` if any color has been written via {@link set} or {@link copyFrom}
-     *   since the last call to {@link clearDirty}.
+     * @returns `true` if any color has been written via {@link set} or {@link copyFrom}, or
+     *   {@link markDirty} was called, since the last call to {@link clearDirty}.
      */
     public get isDirty(): boolean {
         return this._isDirty;
@@ -619,8 +619,8 @@ export class Palette {
     /**
      * Exports palette colors as packed RGB bytes.
      *
-     * Alpha is intentionally omitted because palette serialization for sprite
-     * indexization only needs raw RGB triplets.
+     * Alpha is omitted: this is the RGB-only format {@link Palette.fromUint8Array}
+     * reads back, with every entry restored as opaque.
      *
      * @returns Byte array with `size * 3` entries.
      */

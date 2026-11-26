@@ -28,6 +28,7 @@
  * lock can otherwise have the second one delete the *new*, live lock the first one just created after
  * winning the race and starting its build.
  */
+
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -72,6 +73,7 @@ const isPidAlive = (pid) => {
 
     try {
         process.kill(pid, 0);
+
         return true;
     } catch (err) {
         return err.code === 'EPERM'; // Alive, but owned by another user.
@@ -181,7 +183,7 @@ const acquireLockOrConfirmBuilt = (lockDir, checkBuilt, sleep = sleepSync, now =
     const waitStartMs = now();
     let noticePrinted = false;
 
-    for (;;) {
+    while (true) {
         if (checkBuilt()) {
             return false;
         }
@@ -209,6 +211,7 @@ const acquireLockOrConfirmBuilt = (lockDir, checkBuilt, sleep = sleepSync, now =
 
         if (ownerIsDead || ownerIsUnverifiable) {
             reclaimAbandonedLock(lockDir);
+
             continue;
         }
 

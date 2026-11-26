@@ -71,7 +71,8 @@ interface FileData {
     /**
      * Texture source. Can be:
      * - Base64-encoded PNG data URI (e.g., "data:image/png;base64,...")
-     * - Relative path to the PNG file (resolved relative to .btfont file)
+     * - Path to the PNG file, resolved against the .btfont URL like `Image.src` (relative or
+     *   rooted); it must stay on the font file's origin
      */
     texture: string;
 
@@ -165,7 +166,7 @@ export async function readCappedText(response: Response, onChunk?: () => void): 
  * Coerces a `.btfont` display `name` field to a non-empty string.
  *
  * @param value - Raw JSON value for `name`.
- * @returns Trimmed name when `value` is a non-empty string; otherwise `'Unknown'`.
+ * @returns `value` unchanged when it is a non-empty string; otherwise `'Unknown'`.
  */
 export function resolveDisplayName(value: unknown): string {
     return typeof value === 'string' && value.length > 0 ? value : 'Unknown';
@@ -214,6 +215,8 @@ function parseMetricValue(value: unknown): number {
  * @param url - Path to the `.btfont` file (used in error messages).
  * @param jsonText - Raw JSON text from the font file.
  * @returns Parsed font descriptor and glyph map entries.
+ * @throws Error if the JSON does not parse or has the wrong shape; AssetLimitError if the glyph count or
+ *   embedded texture exceeds its limit.
  */
 export function parseBtfontFile(
     url: string,
@@ -290,6 +293,7 @@ function isGlyphEntryObject(glyphData: unknown): glyphData is GlyphData {
  * Validates glyph entries before the font atlas image is decoded.
  *
  * @param glyphEntries - Glyph map entries from the parsed font file.
+ * @throws AssetLimitError if an entry is not an object or holds an invalid field.
  */
 export function validateGlyphEntriesPreAtlas(glyphEntries: Array<[string, GlyphData]>): void {
     for (const [char, glyphData] of glyphEntries) {
@@ -312,6 +316,7 @@ export function validateGlyphEntriesPreAtlas(glyphEntries: Array<[string, GlyphD
  * @param atlasWidth - Font texture atlas width in pixels.
  * @param atlasHeight - Font texture atlas height in pixels.
  * @returns Glyph lookup tables for Unicode and ASCII fast paths.
+ * @throws AssetLimitError if a glyph rectangle falls outside the atlas.
  */
 export function buildGlyphsFromEntries(
     glyphEntries: Array<[string, GlyphData]>,

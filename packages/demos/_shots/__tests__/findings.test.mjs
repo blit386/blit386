@@ -1,6 +1,7 @@
 /**
  * Findings are the hand-off between a review pass and the fix: flags, notes, markdown.
  */
+
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 

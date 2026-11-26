@@ -93,6 +93,7 @@ export const VALID_BUTTON_FLAGS = [...FACE_BUTTON_FLAGS, BTN_L2, BTN_R2] as cons
  */
 export const ANY_BUTTON_MASK = FACE_BUTTON_MASK;
 
+/** Every `BT.AXIS_*` value, in snapshot order; the set the axis readers validate against. */
 export const VALID_AXIS_INDICES = [
     AXIS_LEFT_X,
     AXIS_LEFT_Y,
@@ -112,7 +113,7 @@ const BUTTON_DOWN_THRESHOLD = 0.5;
 export type GamepadAxes = [number, number, number, number, number, number];
 
 /**
- * Reads and clamps a raw stick axis to `[-1, 1]`.
+ * Reads and clamps a raw stick axis to `[-1, 1]`; a missing or non-finite axis reads as `0`.
  *
  * @param pad - Gamepad object.
  * @param index - Raw axis index.

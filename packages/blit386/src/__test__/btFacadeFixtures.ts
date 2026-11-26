@@ -20,12 +20,15 @@ function setupErrorContainer(): HTMLDivElement {
 
     if (existingContainer instanceof HTMLDivElement) {
         existingContainer.textContent = '';
+
         return existingContainer;
     }
 
     const container = document.createElement('div');
+
     container.id = DEFAULT_CONTAINER_ID;
     document.body.appendChild(container);
+
     return container;
 }
 
@@ -33,6 +36,7 @@ function clearErrorContainer(): void {
     globalThis.__BLIT386_DEV__ = undefined;
 
     const container = document.getElementById(DEFAULT_CONTAINER_ID);
+
     if (container?.parentElement) {
         container.parentElement.removeChild(container);
     }
@@ -40,6 +44,7 @@ function clearErrorContainer(): void {
 
 export async function withErrorContainer(callback: () => void | Promise<void>): Promise<void> {
     setupErrorContainer();
+
     try {
         await callback();
     } finally {

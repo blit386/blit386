@@ -2,6 +2,7 @@
  * Unit tests for the last-frame drawn-text readout: the BT.systemPrint tap, its frame boundary, the kit's
  * source tag, and the merge with the engine's dev-only overlay rows.
  */
+
 import assert from 'node:assert/strict';
 import { afterEach, describe, it } from 'node:test';
 

@@ -57,6 +57,7 @@ export function renderSynthSamples(params: SynthParams, sampleRate: number): Flo
 
     for (let i = 0; i < sampleCount; i++) {
         const t = i / sampleRate;
+
         const frequency = instantaneousFrequencyAt(
             t,
             params.duration,
