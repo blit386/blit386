@@ -120,6 +120,15 @@ and `VISUAL_REQUIRE_WEBGPU=1` (makes `openFixture` throw instead of letting a We
 `pnpm run test:visual` locally before merging a renderer change. Set the same two variables locally to reproduce the CI
 run.
 
+#### Single-file CDN smoke test
+
+`pnpm run test:single-file` (`scripts/smoke-single-file.mjs`) boots the built `dist/blit386.js` from a plain HTML page
+in headless Chrome, with no bundler, the way [One HTML File, No Install](guide-single-file.md) loads it from jsDelivr.
+The page and the engine are served from disk through Playwright request routing, every other request fails the test, and
+the software backend is forced so no GPU is needed. It fails when a build change adds a bare import or splits out a
+chunk. Run it after `pnpm run build`; the `build-engine` job in `.github/workflows/ci.yml` runs it right after the
+build.
+
 ### Tier 4: CPU benchmarks (Vitest bench)
 
 Hot-path performance checks for methods and allocation patterns. Benchmarks run locally only - compare a feature branch

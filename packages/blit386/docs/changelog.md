@@ -19,6 +19,16 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
+## Unreleased
+
+### Added
+
+- Docs: a new guide, [One HTML File, No Install](guide-single-file.md), makes the no-install path official. One HTML
+  file imports the engine from jsDelivr at an exact version and runs with no Node, npm or bundler, which suits chat apps
+  and plain editors. The guide covers the canvas id, what works and what does not, and when to move to
+  `npm create blit386`. Every lockstep bump rewrites the pinned version, `bump:check` fails while it is stale, and CI
+  boots the built engine from a plain HTML page to catch a build change that would break this path.
+
 ## 1.9.1 - 2026-11-26
 
 ### Added

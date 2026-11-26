@@ -383,6 +383,13 @@ jobs:
         working-directory: packages/blit386
         run: pnpm run build:check-declarations build.log
 
+      # Boots dist/blit386.js from a plain HTML page with no bundler, the way the single-file
+      # CDN path (docs/guide-single-file.md) loads it, so a bare import in the build fails here.
+      # Uses the runner image's preinstalled Google Chrome and the software backend (no GPU).
+      - name: Smoke-test the single-file CDN path
+        working-directory: packages/blit386
+        run: pnpm run test:single-file
+
       - name: Upload library artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:

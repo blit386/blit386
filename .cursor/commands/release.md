@@ -225,9 +225,10 @@ split across the release PR and a post-tag PR, and the wrong split silently misl
    the repo root (replace `1.5.0` with the target version; the script lives at `scripts/bump-lockstep.mjs` and writes
    `packages/blit386/package.json`, `packages/blit386/src/core/BTAPI.ts`, `packages/kit/package.json` (including its
    derived `blit386.engineRange`), `packages/create-blit386/package.json`, and
-   `packages/create-blit386/src/scaffold.ts`'s derived `BLIT386_RANGE`, all in one pass). Never suggest separate
-   per-package `npm version` commands, and never bias toward patch or minor - choose SemVer from the pre-bump checklist
-   in `PUBLISHING.md`, anchored to the engine (see guardrail 8).
+   `packages/create-blit386/src/scaffold.ts`'s derived `BLIT386_RANGE`, and the exact jsDelivr pin in
+   `packages/blit386/docs/guide-single-file.md`, all in one pass). Never suggest separate per-package `npm version`
+   commands, and never bias toward patch or minor - choose SemVer from the pre-bump checklist in `PUBLISHING.md`,
+   anchored to the engine (see guardrail 8).
 5. Release tags carry no `v` prefix (`1.5.0`, not `v1.5.0`). One tag per release - there is exactly one series now.
 6. Publishing is manual-only - no CI publish workflow, no `NPM_TOKEN`. Do not suggest re-adding either.
 7. Every release publishes all three packages, even ones with no changes since the last release. Do not add
@@ -238,8 +239,8 @@ split across the release PR and a post-tag PR, and the wrong split silently misl
 ### How to run the release
 
 1. Bump: `pnpm run bump -- X.Y.Z --dry-run` then `pnpm run bump -- X.Y.Z` from the repo root. Confirm the dry-run output
-   lists all three `package.json` files, the engine's version constants, `engineRange`, and `BLIT386_RANGE`, then run
-   `pnpm run bump:check` - it must report `Lockstep is in step at X.Y.Z.`
+   lists all three `package.json` files, the engine's version constants, `engineRange`, `BLIT386_RANGE`, and the
+   jsDelivr pin, then run `pnpm run bump:check` - it must report `Lockstep is in step at X.Y.Z.`
 2. Mark the changelog as released (below), verify docs coverage (below), and move `UNRELEASED_VERSION` and regenerate
    `docs/_api-history.json` (below).
 3. Land the bump through a PR: `main` is protected - branch, PR, wait for checks, merge (`gh pr merge --merge`; squash

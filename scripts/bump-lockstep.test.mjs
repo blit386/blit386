@@ -4,10 +4,12 @@ import { describe, it } from 'node:test';
 
 import {
     applyBlit386Range,
+    applyCdnPin,
     applyEngineRange,
     applyEngineVersionConstants,
     applyVersion,
     bumpLockstep,
+    CDN_PIN_FILE,
     checkLockstep,
     CREATE_BLIT386_PACKAGE_JSON_PATH,
     deriveCaretRange,
@@ -55,6 +57,10 @@ function makeFixtureFiles() {
         [
             join('/repo', SCAFFOLD_RANGE_FILE),
             ["const BLIT386_RANGE = '^1.2.0';", 'export function scaffold() {}', ''].join('\n'),
+        ],
+        [
+            join('/repo', CDN_PIN_FILE),
+            "import { BT } from 'https://cdn.jsdelivr.net/npm/blit386@1.2.1/dist/blit386.js';\n",
         ],
     ]);
 }
@@ -233,6 +239,48 @@ describe('bump-lockstep', () => {
                 () => applyBlit386Range('export function scaffold() {}\n', '^1.5.0'),
                 /missing the BLIT386_RANGE/,
             );
+        });
+    });
+
+    describe('applyCdnPin', () => {
+        const url = (version) => `https://cdn.jsdelivr.net/npm/blit386@${version}/dist/blit386.js`;
+
+        it('rewrites every pinned URL, including the +esm form', () => {
+            const raw = `a ${url('1.0.0')}\nb https://cdn.jsdelivr.net/npm/blit386@1.0.0/+esm\n`;
+            const { next, previous } = applyCdnPin(raw, '2.3.4');
+
+            assert.equal(previous, '1.0.0');
+            assert.equal(next, `a ${url('2.3.4')}\nb https://cdn.jsdelivr.net/npm/blit386@2.3.4/+esm\n`);
+        });
+
+        it('reports every distinct pin when they disagree', () => {
+            assert.equal(
+                applyCdnPin(`${url('1.0.0')} ${url('1.1.0')} ${url('1.0.0')}`, '1.1.0').previous,
+                '1.0.0, 1.1.0',
+            );
+        });
+
+        it('reports a non-SemVer pin as drift rather than skipping it', () => {
+            assert.equal(applyCdnPin(url('latest'), '1.0.0').previous, 'latest');
+        });
+
+        it('leaves other packages on jsDelivr alone', () => {
+            const raw = 'https://cdn.jsdelivr.net/npm/blit386-demos@0.1.0/x.js';
+
+            assert.throws(() => applyCdnPin(raw, '1.0.0'), /has no https:/);
+        });
+
+        it('throws when the page has no pinned URL', () => {
+            assert.throws(() => applyCdnPin('no pin here', '1.0.0'), /has no https:/);
+        });
+
+        it('fails the lockstep check on a stale pin', () => {
+            const files = makeFixtureFiles();
+            files.set(join('/repo', CDN_PIN_FILE), `${url('1.2.0')}\n`);
+
+            const { drift } = checkLockstep({ root: '/repo', readFile: readFrom(files) });
+
+            assert.deepEqual(drift, [{ path: `${CDN_PIN_FILE} (jsDelivr pin)`, actual: '1.2.0', expected: '1.2.1' }]);
         });
     });
 
@@ -441,9 +489,9 @@ describe('bump-lockstep', () => {
                 },
             });
 
-            // 3 package.json versions + engineRange + BTAPI constants + BLIT386_RANGE = 6 rows.
-            assert.equal(results.length, 6);
-            assert.equal(writes.length, 5);
+            // 3 package.json versions + engineRange + BTAPI constants + BLIT386_RANGE + CDN pin = 7 rows.
+            assert.equal(results.length, 7);
+            assert.equal(writes.length, 6);
 
             for (const rel of LOCKSTEP_PACKAGE_JSON_PATHS) {
                 assert.equal(JSON.parse(files.get(join('/repo', rel))).version, '1.5.0');
@@ -478,7 +526,7 @@ describe('bump-lockstep', () => {
             });
 
             assert.equal(writes, 0);
-            assert.equal(results.length, 6);
+            assert.equal(results.length, 7);
             assert.ok(results.every((result) => result.next.includes('9.9.9') || result.next.includes('9.9.0')));
         });
 
