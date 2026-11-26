@@ -22,6 +22,12 @@ import {
     WIDE_SHEET_W,
     WIDE_SRC_RECT_ARGS,
 } from '../__test__/spriteOrientationFixture';
+import {
+    createMockGPUDevice,
+    createMockPaletteBuffer,
+    installMockNavigatorGPU,
+    uninstallMockNavigatorGPU,
+} from '../__test__/webgpu-mock';
 import { BitmapFont } from '../assets/BitmapFont';
 import { Palette } from '../assets/Palette';
 import { SpriteSheet } from '../assets/SpriteSheet';
@@ -29,6 +35,7 @@ import { Color32 } from '../utils/Color32';
 import { Rect2i } from '../utils/Rect2i';
 import { Vector2i } from '../utils/Vector2i';
 import type { Effect } from './effects/Effect';
+import { PrimitivePipeline } from './PrimitivePipeline';
 import { SoftwareRenderer } from './SoftwareRenderer';
 import { resolveSpriteOrientation } from './SpriteOrientation';
 
@@ -1109,4 +1116,49 @@ describe('SoftwareRenderer backend parity (BT-756)', () => {
             await expect(capture).rejects.toThrow('renderer was reset');
         }
     });
+
+    it.each([
+        ['width 0', 0, 0, 0, 3, 0, 0],
+        ['height 0', 0, 0, 3, 0, 0, 0],
+        ['negative width', 4, 4, -2, 3, 0, 0],
+        ['negative height', 4, 4, 3, -2, 0, 0],
+        ['both negative', 4, 4, -2, -2, 0, 0],
+        ['height 1', 2, 2, 4, 1, 12, 6],
+        ['height 2', 2, 2, 4, 2, 12, 6],
+        ['height 3', 2, 2, 4, 3, 24, 6],
+    ])(
+        'reports the same drawRect and drawRectFill vertex counts as PrimitivePipeline for %s (BT-871)',
+        async (_, x, y, w, h, outlineVertices, fillVertices) => {
+            installMockNavigatorGPU();
+
+            try {
+                const pipeline = new PrimitivePipeline();
+                const renderer = await createRenderer();
+                const rect = new Rect2i(x, y, w, h);
+
+                await pipeline.init(createMockGPUDevice(), new Vector2i(16, 16), createMockPaletteBuffer(), 'r8uint');
+
+                const cases: [(target: PrimitivePipeline | SoftwareRenderer) => void, number][] = [
+                    [(target) => target.drawRect(rect, 1), outlineVertices],
+                    [(target) => target.drawRectFill(rect, 1), fillVertices],
+                ];
+
+                for (const [draw, expected] of cases) {
+                    pipeline.reset();
+                    draw(pipeline);
+                    renderer.beginFrame();
+                    draw(renderer);
+
+                    const vertices = renderer.getFrameDiagnostics().primitiveSubmittedVertices;
+
+                    renderer.endFrame();
+
+                    expect(pipeline.getFrameSubmittedVertices()).toBe(expected);
+                    expect(vertices).toBe(expected);
+                }
+            } finally {
+                uninstallMockNavigatorGPU();
+            }
+        },
+    );
 });
