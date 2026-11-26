@@ -40,6 +40,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 
 - A post-process effect whose first `BT.effectAdd` failed (for example, its shader did not compile) no longer leaks a
   screen-sized GPU texture. `BT.effectClear` and engine shutdown now free it even though no effect was ever added.
+- The overlay's primitive vertex count on the software backend no longer counts a `BT.drawRect`, `BT.drawRectFill`, or
+  `BT.clearRect` with zero or negative width or height. Nothing was drawn for such a rect on either backend, but the
+  software count was higher than WebGPU's for each one (12 vertices for an outline, 6 for a fill).
 
 ## 1.9.1 - 2026-11-26
 

@@ -97,6 +97,10 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
      * @returns Vertex count for the outline draw.
      */
     private static estimateRectOutlineVertexCount(rect: Rect2i): number {
+        if (rect.width <= 0 || rect.height <= 0) {
+            return 0;
+        }
+
         const y0 = rect.y;
         const y1 = rect.y + rect.height - 1;
         let vertices = SoftwareRenderer.QUAD_VERTEX_COUNT * 2;
@@ -650,7 +654,11 @@ export class SoftwareRenderer implements IRenderer, OverlayDrawTarget {
             cameraX: this.cameraOffset.x,
             cameraY: this.cameraOffset.y,
         });
-        this.primitiveSubmittedVertices += SoftwareRenderer.QUAD_VERTEX_COUNT;
+
+        // A non-positive size submits nothing on WebGPU (PrimitivePipeline.drawRectFill), so count nothing here.
+        if (width > 0 && height > 0) {
+            this.primitiveSubmittedVertices += SoftwareRenderer.QUAD_VERTEX_COUNT;
+        }
     }
 
     /**
