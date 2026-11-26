@@ -135,6 +135,7 @@ which the kit writes once whenever such an assistant is set up.
 | `save-a-screenshot` | Capture the frame as a PNG |
 | `share-the-game` | Build it and put it online for other people to play |
 | `migrate` | Update the game's code after a BLIT386 upgrade (renames + enable hot reload) |
+| `import-a-chat-game` | Move a one-file game made in a chat app (a `game.html` importing blit386 from jsDelivr) into the project |
 
 ## Usage
 

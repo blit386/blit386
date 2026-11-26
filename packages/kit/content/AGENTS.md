@@ -135,6 +135,8 @@ your score and position; edits to `init()` re-run setup (optional `onHotReload` 
 - The starter game (`src/game.js`, or `src/game.ts` in a TypeScript project) is yours to change. Read its comments
   first; they explain every line. Prefer starting from scratch over editing the starter around your idea? Run
   `npx blit clean` to replace it with an empty `init`/`update`/`render` skeleton - same shape, no demo code.
+- Have a one-file game from a chat app (a `game.html` that imports blit386 from jsDelivr)? The `import-a-chat-game`
+  skill moves it into `src/game.js` (or `src/game.ts`) and leaves the original file untouched.
 - Prefer method-body edits while you tweak gameplay so hot reload keeps state. Reach for `onHotReload` only when you
   edit `init()` a lot and care about carrying score (or similar) across the re-init.
 

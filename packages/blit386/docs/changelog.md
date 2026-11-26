@@ -32,6 +32,9 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   out of the file and imports the exact installed version from jsDelivr, then prints two sizes: the game alone and the
   game plus the engine. `--out <name>.html` names the file inside `dist/`, and `--title` sets the page title. A new kit
   page, `docs/shipping-to-a-compo.md`, covers the options and why the splash still plays (turn it off in `configure()`).
+- `@blit386/kit`: a new skill, `import-a-chat-game`, moves a one-file game made in a chat app (a `game.html` that
+  imports blit386 from jsDelivr) into a scaffolded project. The coding agent copies the module into `src/game.js`,
+  switches the import to `'blit386'`, keeps the project's own page and canvas, and leaves the original file untouched.
 
 ## 1.9.1 - 2026-11-26
 

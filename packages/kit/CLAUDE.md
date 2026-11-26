@@ -28,11 +28,11 @@ doc page fetched with `Accept: text/markdown`. GitHub is the last resort, for wh
 fails on a stale mirror.
 
 The whole of `content/` is the shipped IR, not just `AGENTS.md` + `docs/`: it also carries `rules/`, `skills/` (25
-game-author capability skills plus the `run`, `fix`, `test-the-game`, `migrate`, and `ask-the-docs` workflow skills),
-the scripts in `hooks/` + `hooks.manifest.json`, and the `blit clean` skeletons in `templates/` (`game.js`, `game.ts`,
-read by `src/commands/clean.ts` - not the scaffolder's Catcher starter, which lives in
-`packages/create-blit386/templates/`). Skills and rules are discovered by directory scan in `src/adapters/` \- adding a
-skill folder is enough, nothing registers it by name. Claude Code gets each skill as `.claude/skills/<name>/SKILL.md`
+game-author capability skills plus the `run`, `fix`, `test-the-game`, `migrate`, `import-a-chat-game`, and
+`ask-the-docs` workflow skills), the scripts in `hooks/` + `hooks.manifest.json`, and the `blit clean` skeletons in
+`templates/` (`game.js`, `game.ts`, read by `src/commands/clean.ts` - not the scaffolder's Catcher starter, which lives
+in `packages/create-blit386/templates/`). Skills and rules are discovered by directory scan in `src/adapters/` \- adding
+a skill folder is enough, nothing registers it by name. Claude Code gets each skill as `.claude/skills/<name>/SKILL.md`
 with the frontmatter kept. Cursor gets the same file as `.cursor/skills/<name>/SKILL.md`, frontmatter kept, so it loads
 the skill from the description and still answers `/name`. Most other agents read one shared folder,
 `.agents/skills/<name>/SKILL.md` (`SHARED_SKILLS_DIR`), so the kit emits it once (`generateSharedSkills`) while at least
@@ -100,6 +100,7 @@ here - review in the same pass, not later. Run `/kit-audit` to walk the checklis
 | `content/skills/animate-the-palette/SKILL.md` | Cycle / fade / exposure fade / flash / swap, `highlightLead`, building a fade target with `fillBlock` |
 | `content/skills/test-the-game/SKILL.md` | The `?nosplash` / `?backend=software` URL flags, `window.BT`, `BT.captureFrame`, `BT.testState()`, the dev-only `window.__btInputTrace` entry shape (`packages/blit386/src/input/InputTrace.ts`), the pre-1.8.0 `window.__game` note, and `?seed=` handling, or `blit play`'s steps and options (`src/commands/play.ts`) |
 | `content/skills/share-the-game/SKILL.md` | The production build or `preview` flow, or what `blit bundle --single` embeds or rejects (`src/commands/bundle.ts`) - the skill, the kit `README.md`, and the template `README.md` each list those limits |
+| `content/skills/import-a-chat-game/SKILL.md` | The scaffolder's non-interactive flags (`--yes`, `--agent`), the template `index.html` canvas id or canvas CSS (`packages/create-blit386/templates/base/index.html`), the jsDelivr URL form or page skeleton the chat prompt asks for (`packages/blit386/docs/guide-single-file.md`), or `blit play`'s steps |
 | `content/skills/ask-the-docs/SKILL.md` | The docs MCP tool set, `llms.txt`, or the site's markdown negotiation changes |
 | `content/skills/*/SKILL.md` | Other game-author skills; each demonstrates a slice of the `BT` surface |
 | `content/templates/game.js`, `game.ts` | The `blit clean` skeletons (`src/commands/clean.ts`). Review when `IBTDemo`'s required methods, `bootstrap`'s signature or defaults (`packages/blit386/src/utils/Bootstrap.ts`, `defaultConfig`), or the `testState()` hook change; `test/clean.test.mjs` pins `class Game`, the TS `init` signature, and the JS/TS split. Keep them the empty shape, never the scaffolder's Catcher starter |
