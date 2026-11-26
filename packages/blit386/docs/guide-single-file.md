@@ -219,4 +219,6 @@ npm create blit386@latest my-game
 ```
 
 The `Game` class carries over unchanged: copy it into `src/game.js` and change the import line back to
-`import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';`.
+`import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'blit386';`. A coding agent can do the move for you: the kit's
+`import-a-chat-game` skill walks it through. It ships with every project set up for an AI assistant and is published
+under [Build a Game](https://blit386.dev/docs/build-a-game).
