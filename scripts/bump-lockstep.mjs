@@ -2,8 +2,9 @@
 /**
  * Set blit386, @blit386/kit, and create-blit386 to the same lockstep SemVer version, plus every
  * value derived from it: BTAPI's `VERSION_MAJOR` / `VERSION_MINOR` / `VERSION_PATCH`, the kit's
- * `blit386.engineRange`, and the scaffolder's `BLIT386_RANGE`. Lockstep releases must never leave
- * any of the three packages, or a derived range, out of sync.
+ * `blit386.engineRange`, the scaffolder's `BLIT386_RANGE`, and the jsDelivr URL pinned in the
+ * single-file docs page (`CDN_PIN_FILE`). Lockstep releases must never leave
+ * any of the three packages, or a value derived from them, out of sync.
  *
  * Usage:
  *   node scripts/bump-lockstep.mjs 1.5.0
@@ -43,6 +44,9 @@ export const ENGINE_VERSION_FILE = 'packages/blit386/src/core/BTAPI.ts';
 
 /** Source file holding the scaffolder's pinned engine range, relative to `ROOT`. */
 export const SCAFFOLD_RANGE_FILE = 'packages/create-blit386/src/scaffold.ts';
+
+/** Docs page whose jsDelivr import URL names the exact engine version, relative to `ROOT`. */
+export const CDN_PIN_FILE = 'packages/blit386/docs/guide-single-file.md';
 
 /** SemVer `x.y.z` only (no prerelease / build metadata; no leading zeros). */
 export const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
@@ -231,6 +235,29 @@ export function applyBlit386Range(raw, range) {
     return { next, previous };
 }
 
+// The version in a pinned engine URL: `https://cdn.jsdelivr.net/npm/blit386@<version>/`. Matches any version text up
+// to the next `/`, so a malformed pin is reported as drift rather than skipped.
+const CDN_PIN_RE = /(https:\/\/cdn\.jsdelivr\.net\/npm\/blit386@)([^/\s'"`]+)(\/)/gu;
+
+/**
+ * Rewrite every pinned jsDelivr engine URL to the exact lockstep version. Unlike the caret ranges, the pin is exact:
+ * a pasted single-file game keeps the API it was written against.
+ *
+ * @param {string} raw Docs page contents.
+ * @param {string} version New SemVer `x.y.z`.
+ * @returns {{ next: string, previous: string }} Updated text and the prior pins (distinct, comma-joined).
+ * @throws {Error} When the page holds no pinned URL.
+ */
+export function applyCdnPin(raw, version) {
+    const pins = [...new Set([...raw.matchAll(CDN_PIN_RE)].map((match) => match[2]))];
+
+    if (pins.length === 0) {
+        throw new Error(`${CDN_PIN_FILE} has no https://cdn.jsdelivr.net/npm/blit386@<version>/ URL`);
+    }
+
+    return { next: raw.replace(CDN_PIN_RE, `$1${version}$3`), previous: pins.join(', ') };
+}
+
 /**
  * One physical file this script writes, and how to derive its next contents plus the
  * human-readable result rows (one file can report more than one logical field, e.g. the kit's
@@ -289,6 +316,13 @@ const LOCKSTEP_TARGETS = [
         },
     },
     versionOnlyTarget(CREATE_BLIT386_PACKAGE_JSON_PATH),
+    {
+        path: CDN_PIN_FILE,
+        apply: (raw, version) => {
+            const { next, previous } = applyCdnPin(raw, version);
+            return { next, results: [{ path: `${CDN_PIN_FILE} (jsDelivr pin)`, previous, next: version }] };
+        },
+    },
     {
         path: SCAFFOLD_RANGE_FILE,
         apply: (raw, version) => {

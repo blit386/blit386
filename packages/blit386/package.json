@@ -109,6 +109,7 @@
     "bench:compare": "node scripts/compare-tier-1-benchmarks.mjs --baseline benchmark-baseline.json --current benchmark-results.json --json-out benchmark-comparison.json --markdown-out benchmark-comparison.md --threshold 25",
     "check-bench-coverage": "node scripts/check-bench-coverage.mjs",
     "test:check-bench-coverage": "node --test scripts/check-bench-coverage.test.mjs",
+    "test:single-file": "node scripts/smoke-single-file.mjs",
     "test:visual": "playwright test",
     "test:visual:parity": "playwright test -g \"identically on WebGPU and software\"",
     "test:visual:update": "playwright test --update-snapshots",
