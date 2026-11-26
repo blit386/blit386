@@ -192,6 +192,24 @@ describe('add()', () => {
         expect(createTexture).toHaveBeenCalledTimes(2);
     });
 
+    it('reuses texA left by a failed first add() on the next successful add()', () => {
+        const device = createMockGPUDevice();
+        const createTexture = vi.spyOn(device, 'createTexture');
+        const chain = new PostProcessChain(device, FORMAT, DISPLAY_SIZE, 'pixel');
+        const failing = createStubEffect('pixel');
+        failing.init = () => {
+            throw new Error('shader compile failed');
+        };
+
+        expect(() => {
+            chain.add(failing);
+        }).toThrow('shader compile failed');
+        chain.add(createStubEffect('pixel'));
+
+        expect(createTexture).toHaveBeenCalledTimes(1);
+        expect(chain.isActive()).toBe(true);
+    });
+
     it('calls effect.init() exactly once per successful add', () => {
         const chain = new PostProcessChain(createMockGPUDevice(), FORMAT, DISPLAY_SIZE, 'pixel');
         const effect = createStubEffect('pixel');
@@ -483,6 +501,28 @@ describe('dispose()', () => {
         for (const spy of destroySpies) {
             expect(spy).toHaveBeenCalled();
         }
+        expect(chain.isActive()).toBe(false);
+    });
+
+    it('destroys texA left behind by a first add() whose init threw', () => {
+        const device = createMockGPUDevice();
+        const createTexture = vi.spyOn(device, 'createTexture');
+        const chain = new PostProcessChain(device, FORMAT, DISPLAY_SIZE, 'pixel');
+        const failing = createStubEffect('pixel');
+        failing.init = () => {
+            throw new Error('shader compile failed');
+        };
+
+        expect(() => {
+            chain.add(failing);
+        }).toThrow('shader compile failed');
+        expect(createTexture).toHaveBeenCalledTimes(1);
+        const texA = createTexture.mock.results[0]?.value as GPUTexture;
+        const destroySpy = vi.spyOn(texA, 'destroy');
+
+        chain.dispose();
+
+        expect(destroySpy).toHaveBeenCalledTimes(1);
         expect(chain.isActive()).toBe(false);
     });
 });

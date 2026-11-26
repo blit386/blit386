@@ -36,6 +36,11 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   imports blit386 from jsDelivr) into a scaffolded project. The coding agent copies the module into `src/game.js`,
   switches the import to `'blit386'`, keeps the project's own page and canvas, and leaves the original file untouched.
 
+### Fixed
+
+- A post-process effect whose first `BT.effectAdd` failed (for example, its shader did not compile) no longer leaks a
+  screen-sized GPU texture. `BT.effectClear` and engine shutdown now free it even though no effect was ever added.
+
 ## 1.9.1 - 2026-11-26
 
 ### Added
