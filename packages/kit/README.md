@@ -166,6 +166,12 @@ npx blit help
 Run `npx blit bundle --single` inside a Vite game to write `dist/bundle.html`. The production build tree-shakes and
 minifies code; the command prints the final file size. It keeps other files in `dist/` intact.
 
+Three options shape the file for a compo or jam entry. `--out <name>.html` writes `dist/<name>.html` instead; it takes a
+bare file name and replaces only an earlier bundle, never another file in `dist/`. `--title <text>` sets the page title.
+`--engine cdn` leaves the engine out of the file and imports the exact installed version from jsDelivr, then prints two
+sizes, the game alone and the game plus the engine; it needs blit386 installed from npm, not a linked copy, and a
+network connection to start. The game's `docs/shipping-to-a-compo.md` explains when to use it.
+
 Vite imports and every file in `public/` (except hidden dotfiles) are embedded. Public files loaded by `fetch` or an
 image's `src`, including BLIT386 sprites, audio and bitmap fonts, can be used offline. Remove unused public assets
 before exporting to reduce the file size. A public file the page itself references (an `<img>` in `index.html`, a CSS

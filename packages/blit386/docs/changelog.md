@@ -19,7 +19,7 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
-## Unreleased
+## 1.9.2 - Unreleased
 
 ### Added
 
@@ -28,6 +28,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   and plain editors. The guide covers the canvas id, what works and what does not, and when to move to
   `npm create blit386`. Every lockstep bump rewrites the pinned version, `bump:check` fails while it is stale, and CI
   boots the built engine from a plain HTML page to catch a build change that would break this path.
+- `@blit386/kit`: `blit bundle --single` gets three options for compo and jam entries. `--engine cdn` leaves the engine
+  out of the file and imports the exact installed version from jsDelivr, then prints two sizes: the game alone and the
+  game plus the engine. `--out <name>.html` names the file inside `dist/`, and `--title` sets the page title. A new kit
+  page, `docs/shipping-to-a-compo.md`, covers the options and why the splash still plays (turn it off in `configure()`).
 
 ## 1.9.1 - 2026-11-26
 

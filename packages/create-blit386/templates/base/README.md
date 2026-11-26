@@ -76,7 +76,9 @@ get a link anyone can open.
 ## Share one HTML file
 
 For an offline copy, run `npx blit bundle --single` and send `dist/bundle.html` to your friend. Open the file in a
-browser to try it. The command reports its size and leaves the other files in `dist/` alone.
+browser to try it. The command reports its size and leaves the other files in `dist/` alone. Add `--out demo.html` to
+name the file and `--title "My Demo"` to set the tab name. Entering a compo? `docs/shipping-to-a-compo.md` explains
+`--engine cdn`, which leaves the engine out of the file to keep it small.
 
 The export includes all files in `public/` except hidden dotfiles, even unused ones, so remove files you do not need to
 make it smaller. Test the entire game offline: external services and assets loaded by other browser APIs may still need

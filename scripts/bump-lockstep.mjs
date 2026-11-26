@@ -236,7 +236,8 @@ export function applyBlit386Range(raw, range) {
 }
 
 // The version in a pinned engine URL: `https://cdn.jsdelivr.net/npm/blit386@<version>/`. Matches any version text up
-// to the next `/`, so a malformed pin is reported as drift rather than skipped.
+// to the next `/`, so a malformed pin is reported as drift rather than skipped. `blit bundle --engine cdn` builds the
+// same URL form from ENGINE_CDN_PREFIX in packages/kit/src/commands/bundle.ts; keep the two in step.
 const CDN_PIN_RE = /(https:\/\/cdn\.jsdelivr\.net\/npm\/blit386@)([^/\s'"`]+)(\/)/gu;
 
 /**
