@@ -40,9 +40,16 @@ describe('chat prompt (public/prompt.txt) against the built engine', () => {
 
     test('an import line that is not the pinned jsDelivr form is reported, not skipped', () => {
         const pinned = "from 'https://cdn.jsdelivr.net/npm/blit386@";
-        const problems = checkChatPrompt(prompt.replace(pinned, "from 'https://unpkg.com/blit386@"));
+        const unpinned = prompt.replace(pinned, "from 'https://unpkg.com/blit386@");
+        const problems = checkChatPrompt(unpinned);
 
-        assert.ok(problems.some((problem) => problem.startsWith('not an `import') && problem.includes('unpkg.com')));
+        // The first import line is the one rewritten; match its whole report, not a host substring.
+        const [firstImport] = unpinned
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.startsWith('import '));
+
+        assert.ok(problems.includes(`not an \`import { ... } from '<pinned jsDelivr URL>';\` line: ${firstImport}`));
         assert.ok(problems.some((problem) => problem.startsWith('the import lines differ')));
     });
 
