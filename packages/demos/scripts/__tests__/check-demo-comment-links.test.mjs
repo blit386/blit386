@@ -79,6 +79,22 @@ describe('check-demo-comment-links', () => {
                 'https://blit386.dev/docs/guides/palette#runtime-palette-effects',
             ]);
         });
+
+        it('keeps a trailing plus but still trims trailing ), . and ,', () => {
+            const header = [
+                '// Search: https://example.com/search?q=c+',
+                '// (see https://example.com/a).',
+                '// https://example.com/b,',
+                '// https://example.com/c.',
+            ].join('\n');
+
+            assert.deepEqual(findLinksInHeader(header), [
+                'https://example.com/search?q=c+',
+                'https://example.com/a',
+                'https://example.com/b',
+                'https://example.com/c',
+            ]);
+        });
     });
 
     describe('findPlaceholderLinkFailures', () => {
