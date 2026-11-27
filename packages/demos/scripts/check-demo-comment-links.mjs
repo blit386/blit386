@@ -88,7 +88,7 @@ export function extractHeaderComment(source) {
  */
 export function findLinksInHeader(headerText) {
     const matches = headerText.match(URL_PATTERN) ?? [];
-    return matches.map((url) => url.replace(/[)+,.]+$/u, ''));
+    return matches.map((url) => url.replace(/[),.]+$/u, ''));
 }
 
 /**
