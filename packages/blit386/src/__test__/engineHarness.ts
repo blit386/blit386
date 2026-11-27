@@ -42,6 +42,9 @@ type EngineHarnessOptions<T> = {
 
     /** Merged over the harness defaults (software backend, no splash, no overlay, 160×120, 60 FPS). */
     configure?: Partial<HardwareSettings>;
+
+    /** Replaces the harness's `navigator.getGamepads` stub (its `pad()` then has no effect). */
+    getGamepads?: () => (Gamepad | null)[];
 };
 
 /** Handle returned by {@link startEngine}. */
@@ -115,7 +118,10 @@ export async function startEngine<T>(options: EngineHarnessOptions<T>): Promise<
 
     vi.stubGlobal('OffscreenCanvas', FakeOffscreenCanvas);
 
-    Object.defineProperty(globalThis.navigator, 'getGamepads', { configurable: true, value: () => pads });
+    Object.defineProperty(globalThis.navigator, 'getGamepads', {
+        configurable: true,
+        value: options.getGamepads ?? (() => pads),
+    });
 
     const demo: IBTDemo = {
         configure: () => ({

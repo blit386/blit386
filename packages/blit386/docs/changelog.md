@@ -19,6 +19,14 @@ This page is editorial - release highlights and migration notes, not an exhausti
 `guides/*` reference page, or [GitHub Releases](https://github.com/blit386/blit386/releases) for the full PR-by-PR
 notes, including dependency bumps and CI changes omitted here for brevity.
 
+## Unreleased
+
+### Fixed
+
+- A game now starts in a page that blocks gamepad access, such as the Claude.ai artifact preview. Its Permissions Policy
+  made `navigator.getGamepads()` throw, and the engine stopped at init with "Initialization Failed". Gamepads now read
+  as disconnected, one console warning says why, and keyboard and pointer keep working.
+
 ## 1.9.2 - 2026-11-27
 
 ### Added

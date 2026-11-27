@@ -70,6 +70,12 @@ export class GamepadInput {
     /** Event handler for `gamepaddisconnected`. */
     private readonly onDisconnected: (event: Event) => void;
 
+    /**
+     * Set once the page's Permissions Policy denied `getGamepads()`, so this tracker's later polls
+     * skip the call. Each `BT.init` builds a new tracker, which checks (and warns) once again.
+     */
+    private isBlocked = false;
+
     /** Creates a gamepad input tracker. */
     constructor() {
         this.current = [
@@ -477,14 +483,36 @@ export class GamepadInput {
     /**
      * Safely reads browser gamepads (empty when unavailable).
      *
+     * A page whose Permissions Policy denies `gamepad` (a sandboxed preview iframe, for
+     * example) makes `getGamepads()` throw SecurityError. This tracker warns once and stops
+     * calling it, so the game runs on keyboard and pointer alone; any other error still throws.
+     * The check is by name, not `instanceof DOMException`, so a DOMException from another realm counts.
+     *
      * @returns Current browser gamepad array or an empty array.
      */
     private read(): readonly (Gamepad | null)[] {
-        if (typeof globalThis.navigator === 'undefined' || typeof globalThis.navigator.getGamepads !== 'function') {
+        if (
+            this.isBlocked ||
+            typeof globalThis.navigator === 'undefined' ||
+            typeof globalThis.navigator.getGamepads !== 'function'
+        ) {
             return [];
         }
 
-        return globalThis.navigator.getGamepads();
+        try {
+            return globalThis.navigator.getGamepads();
+        } catch (error) {
+            if ((error as { name?: unknown } | null)?.name !== 'SecurityError') {
+                throw error;
+            }
+
+            this.isBlocked = true;
+            console.warn(
+                '[BT] Gamepads are blocked by this page (Permissions Policy). Keyboard and pointer still work.',
+            );
+
+            return [];
+        }
     }
 
     /**
