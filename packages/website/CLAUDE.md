@@ -55,6 +55,7 @@ call, which fails with `eslint: command not found` and is not a real lint result
 | The CSP itself, and the nonce that replaces `'unsafe-inline'` | `src/csp.ts`, `src/csp-nonce.ts` - see Content-Security-Policy |
 | The `ASSETS` binding type and a page's markdown (`core:get-text`), shared by the Worker plugins | `src/plugin-context.ts` |
 | Worker var values (`BLIT386_CHANNEL`, `BLIT386_CSP_REPORT_ONLY`) shared by `scripts/patch-wrangler.mjs` and `src/` | `src/channel-vars.mjs` (plain `.mjs` so the Node script can import it) |
+| The paste-a-prompt text (`/prompt.txt`) and its engine check | `public/prompt.txt`, `scripts/check-chat-prompt.mjs` - see Chat prompt |
 
 Seven Fumapress `ServerPlugin`s are local to this package rather than upstream. Six live in `src/`: `cspNoncePlugin`
 (`src/csp-nonce.ts`), `channelHeadersPlugin` (`src/channel-headers.ts`), `markdownNegotiationPlugin`
@@ -127,6 +128,31 @@ no body to stamp and correctly gets the nonce-free `BASE_CSP`.
 
 `style-src` still has `'unsafe-inline'` - Fumadocs and Tailwind both emit inline styles, and removing it was out of
 scope for BT-191.
+
+## Chat prompt
+
+`public/prompt.txt` is the one prompt the homepage asks a visitor to paste into a chat app or coding agent (BT-858,
+design in `docs/homepage-research/homepage-design.md` 4.3 and 5). It is served byte for byte at `/prompt.txt`, and it is
+the single source for the homepage's shown, copied and markdown text (BT-856): the page component must read it with a
+Vite `?raw` import, never a pasted copy. The whole file is the copied string, so it holds no comments, and it stays
+ASCII.
+
+- **The idea line.** `My game idea: [describe your game in a sentence or two]` is the one line the homepage swaps for
+  the visitor's idea. Keep that line whole if you reword the prompt.
+- **The pin.** Both import lines name `https://cdn.jsdelivr.net/npm/blit386@x.y.z/dist/blit386.js` at the exact engine
+  version. Never hand-edit it: it is a lockstep target (`CHAT_PROMPT_FILE` in `scripts/bump-lockstep.mjs`), so
+  `pnpm run bump` rewrites it and `pnpm run bump:check` fails while it is stale.
+- **The API check.** `scripts/__tests__/check-chat-prompt.test.mjs` (part of `test:scripts`) runs
+  `scripts/check-chat-prompt.mjs`. It compiles every imported name and every `Name.member` chain on one (`BT.clear`,
+  `BT.random.int`, `AudioClip.synth`) against the built engine's `dist/blit386.d.ts` with the TypeScript checker, and
+  fails on any the engine lacks. It also fails if the two import lines differ, or if any line starting with `import` (or
+  any `import {` later in a line) is not exactly `import { ... } from '<pinned jsDelivr URL>';` - such a line is
+  reported, never skipped. It does not see members reached through a local (`rectA.isIntersecting`, `p.set`),
+  `configure()` keys, or names in prose (the `synthPreset` list), so check those by hand when you edit them. It checks
+  the working-tree engine, not the published pin: do not name an API before the release that ships it.
+- **After an edit.** Run the proxy test in the release skill's "Re-test the chat prompt" section. The homepage examples
+  were made from the old text (design doc 4.2). The kit's `import-a-chat-game` skill reads games built from this
+  skeleton, so a change to the canvas id, the `#wrap` markup or the CSS reaches it too (see `packages/kit/CLAUDE.md`).
 
 ## Test runners
 

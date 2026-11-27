@@ -3,7 +3,8 @@
  * Set blit386, @blit386/kit, and create-blit386 to the same lockstep SemVer version, plus every
  * value derived from it: BTAPI's `VERSION_MAJOR` / `VERSION_MINOR` / `VERSION_PATCH`, the kit's
  * `blit386.engineRange`, the scaffolder's `BLIT386_RANGE`, and the jsDelivr URL pinned in the
- * single-file docs page (`CDN_PIN_FILE`). Lockstep releases must never leave
+ * single-file docs page (`CDN_PIN_FILE`) and in the chat prompt blit386.dev serves
+ * (`CHAT_PROMPT_FILE`). Lockstep releases must never leave
  * any of the three packages, or a value derived from them, out of sync.
  *
  * Usage:
@@ -19,6 +20,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { CDN_PIN_RE } from './lib/cdn-pin.mjs';
 import { PNPM_ARG_SEPARATOR } from './lib/pnpm-arg-separator.mjs';
 
 /** Repo root, resolved from this script's own location at repo-root `scripts/`. */
@@ -48,6 +50,9 @@ export const SCAFFOLD_RANGE_FILE = 'packages/create-blit386/src/scaffold.ts';
 
 /** Docs page whose jsDelivr import URL names the exact engine version, relative to `ROOT`. */
 export const CDN_PIN_FILE = 'packages/blit386/docs/guide-single-file.md';
+
+/** The paste-a-prompt text served at blit386.dev/prompt.txt, pinned like `CDN_PIN_FILE`, relative to `ROOT`. */
+export const CHAT_PROMPT_FILE = 'packages/website/public/prompt.txt';
 
 /** SemVer `x.y.z` only (no prerelease / build metadata; no leading zeros). */
 export const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/u;
@@ -241,10 +246,8 @@ export function applyBlit386Range(raw, range) {
     return { next, previous };
 }
 
-// The version in a pinned engine URL: `https://cdn.jsdelivr.net/npm/blit386@<version>/`. Matches any version text up
-// to the next `/`, so a malformed pin is reported as drift rather than skipped. `blit bundle --engine cdn` builds the
-// same URL form from ENGINE_CDN_PREFIX in packages/kit/src/commands/bundle.ts; keep the two in step.
-const CDN_PIN_RE = /(https:\/\/cdn\.jsdelivr\.net\/npm\/blit386@)([^/\s'"`]+)(\/)/gu;
+// Every pin on a page, for matchAll and replace; the shared CDN_PIN_RE is non-global on purpose.
+const CDN_PIN_ALL_RE = new RegExp(CDN_PIN_RE.source, 'gu');
 
 /**
  * Rewrite every pinned jsDelivr engine URL to the exact lockstep version. Unlike the caret ranges, the pin is exact:
@@ -252,17 +255,18 @@ const CDN_PIN_RE = /(https:\/\/cdn\.jsdelivr\.net\/npm\/blit386@)([^/\s'"`]+)(\/
  *
  * @param {string} raw Docs page contents.
  * @param {string} version New SemVer `x.y.z`.
+ * @param {string} [path] The file `raw` came from, relative to `ROOT`, for the error message.
  * @returns {{ next: string, previous: string }} Updated text and the prior pins (distinct, comma-joined).
  * @throws {Error} When the page holds no pinned URL.
  */
-export function applyCdnPin(raw, version) {
-    const pins = [...new Set([...raw.matchAll(CDN_PIN_RE)].map((match) => match[2]))];
+export function applyCdnPin(raw, version, path = CDN_PIN_FILE) {
+    const pins = [...new Set([...raw.matchAll(CDN_PIN_ALL_RE)].map((match) => match[2]))];
 
     if (pins.length === 0) {
-        throw new Error(`${CDN_PIN_FILE} has no https://cdn.jsdelivr.net/npm/blit386@<version>/ URL`);
+        throw new Error(`${path} has no https://cdn.jsdelivr.net/npm/blit386@<version>/ URL`);
     }
 
-    return { next: raw.replace(CDN_PIN_RE, `$1${version}$3`), previous: pins.join(', ') };
+    return { next: raw.replace(CDN_PIN_ALL_RE, `$1${version}$3`), previous: pins.join(', ') };
 }
 
 /**
@@ -286,6 +290,22 @@ function versionOnlyTarget(path) {
         apply: (raw, version) => {
             const { next, previous } = applyVersion(raw, version);
             return { next, results: [{ path, previous, next: version }] };
+        },
+    };
+}
+
+/**
+ * A lockstep target whose every pinned jsDelivr engine URL is rewritten to the exact version.
+ *
+ * @param {string} path File path, relative to `ROOT`.
+ * @returns {LockstepTarget}
+ */
+function cdnPinTarget(path) {
+    return {
+        path,
+        apply: (raw, version) => {
+            const { next, previous } = applyCdnPin(raw, version, path);
+            return { next, results: [{ path: `${path} (jsDelivr pin)`, previous, next: version }] };
         },
     };
 }
@@ -325,13 +345,8 @@ const LOCKSTEP_TARGETS = [
     },
 
     versionOnlyTarget(CREATE_BLIT386_PACKAGE_JSON_PATH),
-    {
-        path: CDN_PIN_FILE,
-        apply: (raw, version) => {
-            const { next, previous } = applyCdnPin(raw, version);
-            return { next, results: [{ path: `${CDN_PIN_FILE} (jsDelivr pin)`, previous, next: version }] };
-        },
-    },
+    cdnPinTarget(CDN_PIN_FILE),
+    cdnPinTarget(CHAT_PROMPT_FILE),
 
     {
         path: SCAFFOLD_RANGE_FILE,

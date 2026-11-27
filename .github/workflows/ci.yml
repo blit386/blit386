@@ -83,6 +83,8 @@ jobs:
               # build and test run ensure-engine-built.mjs, which imports build-lock.mjs.
               - 'scripts/ensure-engine-built.mjs'
               - 'scripts/build-lock.mjs'
+              # test runs scripts/check-chat-prompt.mjs, which finds the prompt's pinned imports with it.
+              - 'scripts/lib/cdn-pin.mjs'
               # Sources of the generated Build a Game pages (scripts/sync-kit-pages.mjs), which
               # typecheck, test, and build regenerate - a change to them can break the site.
               - 'packages/kit/content/**'

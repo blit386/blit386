@@ -10,6 +10,7 @@ import {
     applyVersion,
     bumpLockstep,
     CDN_PIN_FILE,
+    CHAT_PROMPT_FILE,
     checkLockstep,
     CREATE_BLIT386_PACKAGE_JSON_PATH,
     deriveCaretRange,
@@ -61,6 +62,10 @@ function makeFixtureFiles() {
         [
             join('/repo', CDN_PIN_FILE),
             "import { BT } from 'https://cdn.jsdelivr.net/npm/blit386@1.2.1/dist/blit386.js';\n",
+        ],
+        [
+            join('/repo', CHAT_PROMPT_FILE),
+            "  import { BT } from 'https://cdn.jsdelivr.net/npm/blit386@1.2.1/dist/blit386.js';\n",
         ],
     ]);
 }
@@ -282,6 +287,40 @@ describe('bump-lockstep', () => {
 
             assert.deepEqual(drift, [{ path: `${CDN_PIN_FILE} (jsDelivr pin)`, actual: '1.2.0', expected: '1.2.1' }]);
         });
+
+        it('fails the lockstep check on a stale chat prompt pin', () => {
+            const files = makeFixtureFiles();
+            files.set(join('/repo', CHAT_PROMPT_FILE), `${url('1.2.0')}\n`);
+
+            const { drift } = checkLockstep({ root: '/repo', readFile: readFrom(files) });
+
+            assert.deepEqual(drift, [
+                { path: `${CHAT_PROMPT_FILE} (jsDelivr pin)`, actual: '1.2.0', expected: '1.2.1' },
+            ]);
+        });
+
+        it('names the chat prompt when it holds no pinned URL', () => {
+            const files = makeFixtureFiles();
+            files.set(join('/repo', CHAT_PROMPT_FILE), 'no pin here\n');
+
+            assert.throws(
+                () => checkLockstep({ root: '/repo', readFile: readFrom(files) }),
+                (error) => error instanceof Error && error.message.startsWith(`${CHAT_PROMPT_FILE} has no https:`),
+            );
+        });
+
+        it('rewrites the chat prompt pin on a bump', () => {
+            const files = makeFixtureFiles();
+
+            bumpLockstep({
+                root: '/repo',
+                version: '1.5.0',
+                readFile: readFrom(files),
+                writeFile: (path, data) => files.set(path, data),
+            });
+
+            assert.equal(files.get(join('/repo', CHAT_PROMPT_FILE)), `  import { BT } from '${url('1.5.0')}';\n`);
+        });
     });
 
     describe('parseArgv', () => {
@@ -490,9 +529,9 @@ describe('bump-lockstep', () => {
                 },
             });
 
-            // 3 package.json versions + engineRange + BTAPI constants + BLIT386_RANGE + CDN pin = 7 rows.
-            assert.equal(results.length, 7);
-            assert.equal(writes.length, 6);
+            // 3 package.json versions + engineRange + BTAPI constants + BLIT386_RANGE + 2 CDN pins = 8 rows.
+            assert.equal(results.length, 8);
+            assert.equal(writes.length, 7);
 
             for (const rel of LOCKSTEP_PACKAGE_JSON_PATHS) {
                 assert.equal(JSON.parse(files.get(join('/repo', rel))).version, '1.5.0');
@@ -527,7 +566,7 @@ describe('bump-lockstep', () => {
             });
 
             assert.equal(writes, 0);
-            assert.equal(results.length, 7);
+            assert.equal(results.length, 8);
             assert.ok(results.every((result) => result.next.includes('9.9.9') || result.next.includes('9.9.0')));
         });
 

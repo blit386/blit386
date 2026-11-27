@@ -1,0 +1,191 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Coin Maze</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}
+#wrap{width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+#wrap canvas{image-rendering:pixelated;width:min(100vw,calc(100vh*4/3));height:min(100vh,calc(100vw*3/4))}</style>
+</head><body><div id="wrap"><canvas id="blit386-canvas"></canvas></div>
+<script type="module">
+import { bootstrap, BT, Color32, Rect2i, Vector2i, AudioClip } from 'https://cdn.jsdelivr.net/npm/blit386@1.9.2/dist/blit386.js';
+
+const TILE = 16;
+const COLS = 20;
+const ROWS = 14;
+const HUD_H = 16;
+const SCREEN_W = 320;
+const COIN_COUNT = 12;
+const ROUND_FRAMES = 60 * 60;
+const SPEED = 1.5;
+const BODY_OFF = 3;
+const BODY_SIZE = 10;
+const COIN_OFF = 5;
+const COIN_SIZE = 6;
+
+const C_BG = 1;
+const C_WALL = 2;
+const C_FLOOR = 3;
+const C_COIN = 4;
+const C_ROBOT = 5;
+const C_TEXT = 6;
+const C_WIN = 7;
+const C_LOSE = 8;
+
+// Depth-first maze carve on odd cells. Returns wall[y][x] booleans.
+function carveMaze() {
+  const wall = Array.from({ length: ROWS }, () => new Array(COLS).fill(true));
+  const dirs = [[2, 0], [-2, 0], [0, 2], [0, -2]];
+  const stack = [[1, 1]];
+  wall[1][1] = false;
+  while (stack.length > 0) {
+    const [x, y] = stack[stack.length - 1];
+    const open = dirs.filter(([dx, dy]) => {
+      const nx = x + dx;
+      const ny = y + dy;
+      return nx > 0 && nx < COLS - 1 && ny > 0 && ny < ROWS - 1 && wall[ny][nx];
+    });
+    if (open.length === 0) {
+      stack.pop();
+      continue;
+    }
+    const [dx, dy] = open[BT.random.int(open.length)];
+    wall[y + dy / 2][x + dx / 2] = false;
+    wall[y + dy][x + dx] = false;
+    stack.push([x + dx, y + dy]);
+  }
+  return wall;
+}
+
+function bodyRect(x, y) {
+  return new Rect2i(Math.floor(x) + BODY_OFF, Math.floor(y) + BODY_OFF, BODY_SIZE, BODY_SIZE);
+}
+
+function coinRect(coin) {
+  return new Rect2i(coin.x * TILE + COIN_OFF, HUD_H + coin.y * TILE + COIN_OFF, COIN_SIZE, COIN_SIZE);
+}
+
+function centerText(text, y, slot) {
+  const w = BT.systemPrintMeasure(text).x;
+  BT.systemPrint(new Vector2i(Math.floor((SCREEN_W - w) / 2), y), slot, text);
+}
+
+class Game {
+  configure() {
+    return { displaySize: new Vector2i(SCREEN_W, 240), targetFPS: 60, keyboardLayout: 'single' };
+  }
+
+  async init() {
+    const p = BT.paletteCreate(16);
+    p.set(C_BG, new Color32(20, 24, 40));
+    p.set(C_WALL, new Color32(70, 80, 130));
+    p.set(C_FLOOR, new Color32(34, 38, 62));
+    p.set(C_COIN, new Color32(240, 200, 80));
+    p.set(C_ROBOT, new Color32(90, 220, 255));
+    p.set(C_TEXT, new Color32(240, 240, 240));
+    p.set(C_WIN, new Color32(120, 230, 120));
+    p.set(C_LOSE, new Color32(240, 90, 90));
+    BT.paletteSet(p);
+    this.blipSound = await AudioClip.synth(BT.synthPreset.blip());
+    this.loseSound = await AudioClip.synth(BT.synthPreset.hit());
+    this.newGame();
+    return true;
+  }
+
+  newGame() {
+    const wall = carveMaze();
+    this.walls = [];
+    const floors = [];
+    for (let y = 0; y < ROWS; y++) {
+      for (let x = 0; x < COLS; x++) {
+        if (wall[y][x]) {
+          this.walls.push(new Rect2i(x * TILE, HUD_H + y * TILE, TILE, TILE));
+        } else if (!(x === 1 && y === 1)) {
+          floors.push([x, y]);
+        }
+      }
+    }
+    this.coins = [];
+    for (let i = 0; i < COIN_COUNT && floors.length > 0; i++) {
+      const k = BT.random.int(floors.length);
+      const [x, y] = floors[k];
+      floors[k] = floors[floors.length - 1];
+      floors.pop();
+      this.coins.push({ x, y, taken: false });
+    }
+    this.px = TILE;
+    this.py = HUD_H + TILE;
+    this.taken = 0;
+    this.framesLeft = ROUND_FRAMES;
+    this.state = 'play';
+  }
+
+  update() {
+    if (BT.isPressed(BT.BTN_A, 0)) {
+      this.newGame();
+      return;
+    }
+    if (this.state !== 'play') return;
+
+    this.framesLeft -= 1;
+    const dx = (BT.isDown(BT.BTN_RIGHT, 0) ? 1 : 0) - (BT.isDown(BT.BTN_LEFT, 0) ? 1 : 0);
+    const dy = (BT.isDown(BT.BTN_DOWN, 0) ? 1 : 0) - (BT.isDown(BT.BTN_UP, 0) ? 1 : 0);
+    this.tryMove(dx * SPEED, 0);
+    this.tryMove(0, dy * SPEED);
+
+    const body = bodyRect(this.px, this.py);
+    for (const coin of this.coins) {
+      if (!coin.taken && body.isIntersecting(coinRect(coin))) {
+        coin.taken = true;
+        this.taken += 1;
+        BT.soundPlay(this.blipSound);
+      }
+    }
+
+    if (this.taken === this.coins.length) {
+      this.state = 'won';
+    } else if (this.framesLeft <= 0) {
+      this.state = 'lost';
+      BT.soundPlay(this.loseSound);
+    }
+  }
+
+  tryMove(dx, dy) {
+    const nx = this.px + dx;
+    const ny = this.py + dy;
+    if (!this.blockedAt(nx, ny)) {
+      this.px = nx;
+      this.py = ny;
+    }
+  }
+
+  blockedAt(x, y) {
+    const body = bodyRect(x, y);
+    return this.walls.some((w) => body.isIntersecting(w));
+  }
+
+  render() {
+    BT.clear(C_FLOOR);
+    for (const w of this.walls) BT.drawRectFill(w, C_WALL);
+    for (const coin of this.coins) {
+      if (!coin.taken) BT.drawRectFill(coinRect(coin), C_COIN);
+    }
+    BT.drawRectFill(bodyRect(this.px, this.py), C_ROBOT);
+
+    BT.drawRectFill(new Rect2i(0, 0, SCREEN_W, HUD_H), C_BG);
+    BT.systemPrint(new Vector2i(4, 4), C_TEXT, `COINS ${this.taken}/${this.coins.length}`);
+    const secs = Math.ceil(this.framesLeft / 60);
+    const timeText = `TIME ${secs}`;
+    const tw = BT.systemPrintMeasure(timeText).x;
+    BT.systemPrint(new Vector2i(SCREEN_W - 4 - tw, 4), secs <= 10 ? C_LOSE : C_TEXT, timeText);
+
+    if (this.state !== 'play') {
+      const won = this.state === 'won';
+      const box = new Rect2i(60, 96, 200, 48);
+      BT.drawRectFill(box, C_BG);
+      BT.drawRect(box, C_TEXT);
+      centerText(won ? 'YOU WIN!' : 'TIME UP', 108, won ? C_WIN : C_LOSE);
+      centerText('SPACE TO RESTART', 126, C_TEXT);
+    }
+  }
+}
+
+bootstrap(Game);
+</script></body></html>

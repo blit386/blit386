@@ -30,7 +30,7 @@ const DEFAULT_OUTPUT = 'bundle.html';
 const ENGINE_PACKAGE = 'blit386';
 
 // Same URL form as the pinned import in packages/blit386/docs/guide-single-file.md; keep in step with
-// CDN_PIN_RE in scripts/bump-lockstep.mjs.
+// CDN_PIN_RE in scripts/lib/cdn-pin.mjs.
 const ENGINE_CDN_PREFIX = 'https://cdn.jsdelivr.net/npm/blit386@';
 const ENGINE_CDN_FILE = '/dist/blit386.js';
 const ENGINE_MODES = ['inline', 'cdn'] as const;
