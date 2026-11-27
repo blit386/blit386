@@ -204,7 +204,8 @@ const MDX_COMPONENTS = new Set([
     ...['CodeBlockTab', 'CodeBlockTabs', 'CodeBlockTabsList', 'CodeBlockTabsTrigger'],
     ...['Accordion', 'Accordions', 'File', 'Files', 'Folder', 'InlineTOC', 'Step', 'Steps', 'Tab', 'Tabs'],
     ...['TypeTable', 'Popup', 'PopupContent', 'PopupTrigger', 'AuthorByline', 'CommunityConnect'],
-    ...['DemoEmbed', 'DemoShowcase', 'VideoEmbed', 'HomeHero', 'ApiAvailability', 'PageChangelog', 'Since'],
+    ...['DemoEmbed', 'DemoShowcase', 'VideoEmbed', 'HomeStart', 'PromptBox', 'ApiAvailability', 'PageChangelog'],
+    ...['Since'],
 ]);
 const MDX_NAME = `(?:${[...MDX_COMPONENTS].join('|')})(?![\\w])`;
 const MDX_OPEN_PATTERN = new RegExp(`<${MDX_NAME}`, 'gu');

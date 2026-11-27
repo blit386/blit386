@@ -1,71 +1,74 @@
 ---
-title: BLIT386
-description:
-  A palette-first retro game engine for the web. Change what a color means, and everything drawn in it changes at once.
+title: BLIT386 - Make your first game this weekend
+description: Tell your AI what you want to play. Type your idea into the prompt, copy it, and paste it into your AI.
 ---
 
-<HomeHero />
+<HomeStart>
 
-BLIT386 is a palette-first retro game engine for the web. Palette-first means you draw with numbered colors rather than
-RGBA pixels, so changing what color 3 _means_ recolors everything drawn in it at once: a few bytes of palette upload,
-and water flows or the sky goes dark without a single pixel being redrawn. TypeScript throughout, WebGPU where the
-browser has it, an automatic Canvas 2D fallback where it does not. The design takes its cue from
-[RetroBlit](https://www.badcastle.com/retroblit.html) by Martin Cietwierkowski ([@daafu](https://github.com/daafu)).
+# Make your first game this weekend.
 
-## Features
+Tell your AI what you want to play. Type your idea into the prompt, copy it, and paste it into your AI.
+
+<PromptBox>
+
+<include>../public/prompt.txt</include>
+
+</PromptBox>
+
+Developer? `npm create blit386@latest` - or read the [docs](/docs).
+
+</HomeStart>
+
+## What happens after you paste
+
+1. Your AI writes one HTML file. No install, no account.
+2. If your AI can show it, play it right there. If not, save it as `game.html` and open it in your browser.
+3. Ask for changes: "make it faster", "add a high score".
+
+## Small on purpose
+
+256 colors and a pixel grid. The limits are why a first game looks deliberate and gets finished.
+
+BLIT386 draws with numbered colors instead of picking a color for every pixel. Change what color 3 means and everything
+drawn in it changes at once: water flows, the sky goes dark, a hit flashes red, and not one pixel is drawn again.
+
+<DemoEmbed demo="logo-lowres" title="BLIT386 low-res logo demo" />
+
+## Why BLIT386
 
 <Cards>
-  <Card title="Palette-first indexed color" href="/docs/guides/palette">
-    All rendering resolves through a shared indexed palette of up to 256 entries for pixel-perfect, palette-swap-friendly output.
+  <Card title="Your AI gets everything it needs in one prompt">
+    The prompt lists the part of the engine your AI may use, checked against the engine on every release, so it does not have to guess.
   </Card>
 
-  <Card title="WebGPU with Canvas 2D fallback" href="/docs/api/rendering">
-    WebGPU is the default backend; the engine silently falls back to a Canvas 2D software renderer when unavailable.
-  </Card>
-
-  <Card title="Sprites, primitives & bitmap text" href="/docs/api/assets">
-    Draw textured sprites, colored geometry, and bitmap-font glyphs through a single unified draw API.
-  </Card>
-
-  <Card title="Overlay HUD" href="/docs/api/overlay">
-    A built-in debug HUD displays frame timing, palette state, and the active renderer backend at a keypress.
-  </Card>
-
-  <Card title="Palette effects" href="/docs/guides/palette">
-    Cycle, fade, flash, and swap palette entries at runtime for classic retro visual effects.
-  </Card>
-
-  <Card title="Input: pointer, keyboard & gamepad" href="/docs/guides/input">
-    Unified input layer covering mouse, touch, pen, keyboard, and gamepad across all modern browsers.
-  </Card>
-
-  <Card title="Audio: buses, clips & synth" href="/docs/guides/audio">
-    A full audio subsystem: a three-bus mixer, `AudioClip` loading and playback, and a procedural synth for
-    zero-asset sound effects.
+  <Card title="Free and open source">
+    ISC license. No account, no credits, and the game is your own file from the first minute.
   </Card>
 </Cards>
 
-## Quick start
+## For developers
 
-The fastest way to begin is the scaffolder. It works with npm, pnpm, yarn, or bun and generates a ready-to-run Vite
-project with the engine installed, a starter game, and local docs:
+BLIT386 is a palette-first retro game engine for the web, written in TypeScript with no dependencies. All drawing goes
+through an [indexed palette](/docs/guides/palette) of up to 256 entries, with
+[palette cycling, fades and swaps](/docs/guides/palette) for classic effects. [WebGPU](/docs/api/rendering) renders
+where the browser has it, with an automatic Canvas 2D fallback where it does not. It covers
+[sprites, primitives and bitmap text](/docs/api/assets), [pointer, keyboard and gamepad input](/docs/guides/input),
+[audio with a mixer and a synth](/docs/guides/audio), and a [debug overlay](/docs/api/overlay).
+
+Start a project with the scaffolder. It works with npm, pnpm, yarn, or bun and sets up a Vite project with the engine, a
+starter game, and docs for your coding agent:
 
 ```bash
 npm create blit386@latest my-game
 ```
 
-Prefer to add the engine to an existing project by hand? [Getting Started](/docs/getting-started) walks through the
-manual install and a first `bootstrap()` call.
+Or skip the install: [one HTML file](/docs/guides/single-file) loads the engine from a CDN.
+[Getting Started](/docs/getting-started) covers both.
 
 <DemoShowcase />
 
-## Where to go next
-
-- [Documentation](/docs) - the full public API reference and guides.
-- [API: Core](/docs/api/core) - `bootstrap()`, initialization, and default configuration.
-- [Input Guide](/docs/guides/input) - pointer, keyboard, and gamepad input.
+- [Documentation](/docs) - the full API reference and guides.
 - [Interactive demos](https://demos.blit386.dev) - runnable examples for every subsystem.
-
-The engine source lives in the [blit386 repository on GitHub](https://github.com/blit386/blit386).
+- [Source on GitHub](https://github.com/blit386/blit386).
 
 <CommunityConnect title="Join the community" />

@@ -48,6 +48,11 @@ page, so there is no runtime fetch and a broken manifest fails the build; it ser
 emits `dist/index.html`; unlike `/shots` it is indexable and carries the `buildSocialMeta` head block. `index` and
 `shots` are both in `RESERVED_SLUGS`.
 
+`public/examples/` holds the blit386.dev homepage's example games, which are not demos: each is a chat app's single-file
+game (`<slug>.html`, never edited; no formatter touches `.html`) plus its `<slug>.json` metadata, which the website
+validates at build time. They import the engine from jsDelivr, so `public/_headers` gives `/examples/*` its own CSP -
+see `docs/SECURITY-HEADERS.md`, Example games.
+
 Filenames are number-free kebab-case (`basics.js`, `sprite-effects.js`); the first path segment must start with a
 letter, so legacy `001-topic.js` names are rejected. Navigation order is **not** derived from the filename - it comes
 from `DEMO_ORDER` in `plugins/demo-order.js`.

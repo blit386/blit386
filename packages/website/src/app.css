@@ -183,6 +183,12 @@
     @apply h-24;
 }
 
+/* The same 64px logo in the homepage's top bar (fumadocs-ui HomeLayout, `/` only): the header and its row are h-14. */
+#nd-nav,
+#nd-nav nav {
+    @apply h-20;
+}
+
 /* fumadocs-ui computes --fd-docs-row-2 (the mobile "Features" TOC-popover's sticky top
    offset) on #nd-docs-layout itself, from --fd-header-height inherited at THAT scope - not
    from whatever #nd-subnav (the actual mobile logo bar, sized via the same variable) sets
@@ -415,12 +421,19 @@ code {
         }
     }
 
+    /* h1 included for the homepage headline, the one MDX h1 on the site. */
+    & h1,
     & h2,
     & h3,
     & h4 {
         & [data-card] {
             @apply pb-0 shadow-none hover:shadow-none;
         }
+    }
+
+    /* The headline is the line visitors quote, so it stays selectable, unlike the section headings. */
+    & h1 [data-card] {
+        @apply select-text;
     }
 
     & .grid {
