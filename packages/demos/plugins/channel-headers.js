@@ -21,9 +21,9 @@ export function buildRobotsTxt(isNextChannel, siteUrl) {
 }
 
 /**
- * Add `X-Robots-Tag: noindex` to the existing `/*` rule of a `_headers` file. Cloudflare Pages
- * lets a later `/*` rule replace an earlier one, so a second `/*` block would drop the CSP and
- * every other baseline header. Pure and exported so it can be unit-tested without touching disk.
+ * Add `X-Robots-Tag: noindex` to the existing `/*` rule of a `_headers` file. Appending a second
+ * `/*` block instead left next.demos.blit386.dev serving no CSP and no Permissions-Policy.
+ * Pure and exported so it can be unit-tested without touching disk.
  * @param {string} headers - The `_headers` file contents.
  * @returns {string} The same contents with the noindex line first in the `/*` rule.
  */
