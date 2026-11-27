@@ -4,9 +4,10 @@
  */
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { buildNoindexHeadersBlock, buildRobotsTxt } from '../channel-headers.js';
+import { addNoindexHeader, buildRobotsTxt } from '../channel-headers.js';
 import { SITE_URL } from '../sitemap.js';
 
 describe('buildRobotsTxt', () => {
@@ -26,11 +27,36 @@ describe('buildRobotsTxt', () => {
     });
 });
 
-describe('buildNoindexHeadersBlock', () => {
-    it('carries the X-Robots-Tag: noindex directive for every path', () => {
-        const block = buildNoindexHeadersBlock();
+describe('addNoindexHeader', () => {
+    const headers =
+        "# comment\n\n/*\n  X-Content-Type-Options: nosniff\n  Content-Security-Policy: default-src 'self'\n\n/examples/*\n  Content-Security-Policy: default-src 'none'\n";
 
-        assert.ok(block.includes('/*'));
-        assert.ok(block.includes('X-Robots-Tag: noindex'));
+    it('adds noindex inside the existing /* block instead of a second /* block', () => {
+        const result = addNoindexHeader(headers);
+
+        assert.equal(result.match(/^\/\*$/gm)?.length, 1);
+        assert.ok(
+            result.includes(
+                "/*\n  X-Robots-Tag: noindex\n  X-Content-Type-Options: nosniff\n  Content-Security-Policy: default-src 'self'\n",
+            ),
+        );
+    });
+
+    it('keeps every other rule intact', () => {
+        assert.equal(addNoindexHeader(headers).replace('  X-Robots-Tag: noindex\n', ''), headers);
+    });
+
+    it('throws when there is no /* block to extend', () => {
+        assert.throws(() => addNoindexHeader('/examples/*\n  X-Frame-Options: DENY\n'), /\/\*/);
+    });
+
+    it('puts noindex in the same rule as the CSP in the real public/_headers', () => {
+        const result = addNoindexHeader(readFileSync(new URL('../../public/_headers', import.meta.url), 'utf8'));
+        const catchAllRule = result.split(/\n(?=\S)/).find((rule) => rule.startsWith('/*\n'));
+
+        assert.equal(result.match(/^\/\*$/gm)?.length, 1);
+        assert.ok(catchAllRule?.includes('  X-Robots-Tag: noindex\n'));
+        assert.ok(catchAllRule?.includes('  Content-Security-Policy: '));
+        assert.ok(catchAllRule?.includes('  Permissions-Policy: '));
     });
 });
