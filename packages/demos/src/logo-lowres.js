@@ -54,7 +54,7 @@ WHAT YOU WILL LEARN
   palette resolve, and nine display-tier effects on the resolved RGBA buffer.
 - Scanlines density = DISPLAY_H puts one scanline cycle on every logical row; RGBMask
   size 3 with border 0 gives one clean R-G-B stripe cycle per logical pixel.
-- Two independent cooldown/active state machines driven by BT.random.int(),
+- Two independent cooldown/active state machines driven by BT.random.intInclusive(),
   BT.random.float(), and BT.random.pick(GLITCH_TYPES_VROLL), resting uniforms restored
   every tick before the active fault is layered on.
 - isOverlayEnabled: false for an immersive piece with no dev HUD.
@@ -391,10 +391,13 @@ class Demo {
         applyCrtChain(this.crtEffects);
 
         // Pick a random delay before the first TV fault and the first band wobble.
-        // BT.random is the engine's shared random number generator; int(min, max) returns
-        // a whole number from min up to but not including max.
-        this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-        this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+        // BT.random is the engine's shared random number generator.
+        // intInclusive(min, max) returns a whole number from min up to and including max,
+        // so the ranges in the constants above are exact. Plain int(min, max) stops one
+        // short of max - handy for array indexes, but it would make "up to 24 ticks"
+        // really mean 23.
+        this.glitchCooldown = BT.random.intInclusive(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        this.bandWobbleCooldown = BT.random.intInclusive(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
 
         return true;
     }
@@ -469,8 +472,8 @@ class Demo {
             if (this.glitchTicksLeft <= 0) {
                 // Burst finished: schedule the next cooldown and re-roll the band wobble
                 // cooldown too.
-                this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-                this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+                this.glitchCooldown = BT.random.intInclusive(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+                this.bandWobbleCooldown = BT.random.intInclusive(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
 
             // Return early: the rest of the state machine does not run during a burst.
@@ -492,7 +495,7 @@ class Demo {
             // Wobble over: flatten the rows again and wait a fresh random while.
             if (this.bandWobbleActive <= 0) {
                 this.pixelGlitch.intensity = 0;
-                this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+                this.bandWobbleCooldown = BT.random.intInclusive(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
         } else {
             // No wobble running: count down toward the next one.
@@ -501,7 +504,7 @@ class Demo {
             if (this.bandWobbleCooldown <= 0) {
                 // Start a new band-wobble burst. A different seed gives a different row
                 // pattern.
-                this.bandWobbleDuration = BT.random.int(BAND_WOBBLE_ACTIVE_MIN, BAND_WOBBLE_ACTIVE_MAX);
+                this.bandWobbleDuration = BT.random.intInclusive(BAND_WOBBLE_ACTIVE_MIN, BAND_WOBBLE_ACTIVE_MAX);
                 this.bandWobbleActive = this.bandWobbleDuration;
                 this.bandWobbleSeed = BT.random.float(0, 1000);
             }
@@ -511,10 +514,10 @@ class Demo {
         this.glitchCooldown--;
 
         if (this.glitchCooldown <= 0) {
-            // Time for a fault. pick() returns one item of a list; float(min, max) is the
-            // decimal counterpart of int().
+            // Time for a fault. pick() returns one item of a list; float(min, max)
+            // returns a decimal from min up to but not including max.
             this.glitchType = BT.random.pick(GLITCH_TYPES_VROLL);
-            this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
+            this.glitchDuration = BT.random.intInclusive(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
             this.glitchTicksLeft = this.glitchDuration;
             this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
             this.pixelGlitch.seed = BT.random.float(0, 1000);

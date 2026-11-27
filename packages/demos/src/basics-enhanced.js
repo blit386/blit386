@@ -288,10 +288,12 @@ class Demo {
         BT.effectAdd(this.pixelGlitch);
         applyCrtChain(this.crtEffects);
 
-        // BT.random is the engine's shared random number generator. int(min, max) returns
-        // a whole number from min up to but not including max, so this waits a random
-        // number of ticks before the first burst.
-        this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        // BT.random is the engine's shared random number generator.
+        // intInclusive(min, max) returns a whole number from min up to and including max,
+        // so this waits GLITCH_COOLDOWN_MIN to GLITCH_COOLDOWN_MAX ticks (both included)
+        // before the first burst, as the header says. Plain int(min, max) would never
+        // return max itself.
+        this.glitchCooldown = BT.random.intInclusive(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0;
         this.glitchDuration = 0;
         this.glitchType = GLITCH_TYPE.NONE;
