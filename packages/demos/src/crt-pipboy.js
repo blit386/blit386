@@ -548,10 +548,12 @@ class Demo {
         applyCrtChain(this.crtEffects);
 
         // Step 7: glitch state machine state. See the file header for what each field
-        // means. BT.random is the engine's shared random number generator; int(min, max)
-        // returns a whole number from min up to but not including max, so the first burst
-        // waits a random number of ticks instead of firing on frame 1.
-        this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        // means. BT.random is the engine's shared random number generator.
+        // intInclusive(min, max) returns a whole number from min up to and including max,
+        // so the first burst waits GLITCH_COOLDOWN_MIN to GLITCH_COOLDOWN_MAX ticks (both
+        // included) instead of firing on frame 1 - the same range every later wait uses.
+        // Plain int(min, max) would never return max itself.
+        this.glitchCooldown = BT.random.intInclusive(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0; // ticks remaining in the current burst; 0 means idle
         this.glitchDuration = 0;
         this.glitchType = GLITCH_TYPE.NONE;

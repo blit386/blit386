@@ -520,9 +520,12 @@ class Demo {
         BT.paletteSet(this.palette);
 
         // Fault state is shared by both backends - initialize it once before the CRT
-        // check. BT.random.int(min, max) returns a whole number in [min, max), so this
-        // waits a random number of ticks before the first burst.
-        this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        // check. BT.random.intInclusive(min, max) returns a whole number from min up to
+        // and including max, so this waits GLITCH_COOLDOWN_MIN to GLITCH_COOLDOWN_MAX
+        // ticks (both included) before the first burst, as the header says. Plain
+        // int(min, max) would never return max itself. The band wobble below rolls the
+        // same way.
+        this.glitchCooldown = BT.random.intInclusive(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0;
         this.glitchDuration = 0;
         this.glitchType = GLITCH_TYPE.NONE;
@@ -538,7 +541,7 @@ class Demo {
         // Build the full Tesla Orava effect chain (see setupCrtStack() below).
         this.setupCrtStack();
 
-        this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+        this.bandWobbleCooldown = BT.random.intInclusive(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
         this.bandWobbleTicksLeft = 0;
         this.bandWobbleDuration = 0;
 
@@ -734,8 +737,8 @@ class Demo {
             // The burst just ended: wait a fresh random time before the next fault, and
             // hold off the band wobble too so the two never run back to back.
             if (this.glitchTicksLeft <= 0) {
-                this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
-                this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+                this.glitchCooldown = BT.random.intInclusive(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+                this.bandWobbleCooldown = BT.random.intInclusive(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
 
             return;
@@ -758,7 +761,7 @@ class Demo {
             // The wobble just ended: switch the tear off and wait before the next one.
             if (this.bandWobbleTicksLeft <= 0) {
                 this.pixelGlitch.intensity = 0;
-                this.bandWobbleCooldown = BT.random.int(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
+                this.bandWobbleCooldown = BT.random.intInclusive(BAND_WOBBLE_COOLDOWN_MIN, BAND_WOBBLE_COOLDOWN_MAX);
             }
         } else {
             // No wobble: count down, and when the wait runs out start one with a random
@@ -766,7 +769,7 @@ class Demo {
             this.bandWobbleCooldown--;
 
             if (this.bandWobbleCooldown <= 0) {
-                this.bandWobbleDuration = BT.random.int(BAND_WOBBLE_ACTIVE_MIN, BAND_WOBBLE_ACTIVE_MAX);
+                this.bandWobbleDuration = BT.random.intInclusive(BAND_WOBBLE_ACTIVE_MIN, BAND_WOBBLE_ACTIVE_MAX);
                 this.bandWobbleTicksLeft = this.bandWobbleDuration;
                 this.bandWobbleSeed = BT.random.float(0, 1000);
             }
@@ -779,7 +782,7 @@ class Demo {
             // Start a burst: BT.random.pick() chooses one fault type from the list,
             // float() picks its peak strength and a fresh band seed.
             this.glitchType = BT.random.pick(GLITCH_TYPES_VROLL);
-            this.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
+            this.glitchDuration = BT.random.intInclusive(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
             this.glitchTicksLeft = this.glitchDuration;
             this.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
             this.pixelGlitch.seed = BT.random.float(0, 1000);
