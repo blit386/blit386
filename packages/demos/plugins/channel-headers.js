@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -21,25 +21,31 @@ export function buildRobotsTxt(isNextChannel, siteUrl) {
 }
 
 /**
- * Build the `X-Robots-Tag: noindex` block appended to `dist/_headers` on the next channel.
- * Pure and exported so it can be unit-tested without touching disk.
- * @returns {string}
+ * Add `X-Robots-Tag: noindex` to the existing `/*` rule of a `_headers` file. Cloudflare Pages
+ * lets a later `/*` rule replace an earlier one, so a second `/*` block would drop the CSP and
+ * every other baseline header. Pure and exported so it can be unit-tested without touching disk.
+ * @param {string} headers - The `_headers` file contents.
+ * @returns {string} The same contents with the noindex line first in the `/*` rule.
  */
-export function buildNoindexHeadersBlock() {
-    return '\n# BT-406: next.demos.blit386.dev preview channel - never index.\n/*\n  X-Robots-Tag: noindex\n';
+export function addNoindexHeader(headers) {
+    const catchAllRule = /^\/\*[ \t]*$/m;
+    if (!catchAllRule.test(headers)) {
+        throw new Error('channel-headers: dist/_headers has no /* rule to add X-Robots-Tag: noindex to');
+    }
+    return headers.replace(catchAllRule, (rule) => `${rule}\n  X-Robots-Tag: noindex`);
 }
 
 /**
  * On the `next.demos.blit386.dev` preview channel (`BLIT386_CHANNEL=next`, set only in the
- * `deploy-demos-next` CI job - see `.github/workflows/deploy.yml`), appends an
- * `X-Robots-Tag: noindex` block to `dist/_headers` and writes a disallow-all `dist/robots.txt`.
- * Production gets neither `_headers` addition: it stays exactly what Vite's `public/` copy wrote
+ * `deploy-demos-next` CI job - see `.github/workflows/deploy.yml`), adds `X-Robots-Tag: noindex`
+ * to the `/*` rule of `dist/_headers` and writes a disallow-all `dist/robots.txt`.
+ * Production gets no `_headers` change: it stays exactly what Vite's `public/` copy wrote
  * from `public/_headers`. Production's `robots.txt` instead allows everything and points
  * crawlers at `sitemapPlugin`'s `dist/sitemap.xml`.
  *
  * Runs in `closeBundle`, which fires after every plugin's `writeBundle` hook across the whole
  * build (Rollup runs the hooks in phases, not by plugin array order) - so `dist/_headers` from
- * Vite's `public/` copy already exists by the time this reads/appends to it.
+ * Vite's `public/` copy already exists by the time this reads and rewrites it.
  * @returns {import('vite').Plugin}
  */
 export function channelHeadersPlugin() {
@@ -54,13 +60,7 @@ export function channelHeadersPlugin() {
             }
 
             const headersPath = join(distDir, '_headers');
-            const noindexBlock = buildNoindexHeadersBlock();
-
-            if (existsSync(headersPath)) {
-                appendFileSync(headersPath, noindexBlock);
-            } else {
-                writeFileSync(headersPath, noindexBlock.trimStart());
-            }
+            writeFileSync(headersPath, addNoindexHeader(readFileSync(headersPath, 'utf8')));
 
             writeFileSync(join(distDir, 'robots.txt'), buildRobotsTxt(true, SITE_URL));
         },
