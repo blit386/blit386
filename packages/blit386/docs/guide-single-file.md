@@ -21,7 +21,7 @@ no bundler on every CI run that touches the engine, so a build change that would
 ## The import
 
 ```js
-import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'https://cdn.jsdelivr.net/npm/blit386@1.9.1/dist/blit386.js';
+import { bootstrap, BT, Color32, Rect2i, Vector2i } from 'https://cdn.jsdelivr.net/npm/blit386@1.9.2/dist/blit386.js';
 ```
 
 The URL names an exact version. Every release updates the version on this page, and a check fails the release if it is
@@ -29,7 +29,7 @@ stale, so the snippet here always matches the newest engine. Keep the exact vers
 keeps working the same way forever, while a moving one (`blit386@1`, or no version at all) can pick up a release whose
 API your game does not expect.
 
-The same file is also served at `https://cdn.jsdelivr.net/npm/blit386@1.9.1/+esm` and by unpkg. jsDelivr `/npm/` is the
+The same file is also served at `https://cdn.jsdelivr.net/npm/blit386@1.9.2/+esm` and by unpkg. jsDelivr `/npm/` is the
 one to use: Claude.ai artifacts allow scripts from it, and it sends `access-control-allow-origin: *`.
 
 ## A whole game in one file
@@ -76,7 +76,7 @@ to its software renderer elsewhere.
         Color32,
         Rect2i,
         Vector2i,
-      } from 'https://cdn.jsdelivr.net/npm/blit386@1.9.1/dist/blit386.js';
+      } from 'https://cdn.jsdelivr.net/npm/blit386@1.9.2/dist/blit386.js';
 
       // Color slot numbers. Slot 0 is always transparent, so we start at 1.
       const COLOR_BACKGROUND = 1;
