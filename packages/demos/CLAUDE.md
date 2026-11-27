@@ -385,8 +385,9 @@ project (`demos.blit386.dev`) on a release tag push (`x.y.z`, no `v` prefix, no 
 every push to main, no path filter. The `-next` job sets `BLIT386_CHANNEL=next` on the build step, which
 `plugins/sitemap.js` reads once into `IS_NEXT_CHANNEL` (Node context, at build time - no client-side env var involved);
 `plugins/virtual-demos.js`, `plugins/channel-headers.js`, and the sitemap plugin use that constant to render the
-unreleased-work banner and a `noindex` meta tag into every page, append `X-Robots-Tag: noindex` to `dist/_headers`, and
-write a disallow-all `dist/robots.txt`. Production gets none of that - no banner, no noindex header, and `_headers`
-stays exactly what Vite's `public/` copy produced. Production's `robots.txt` instead allows everything and points
-crawlers at `dist/sitemap.xml`, which `plugins/sitemap.js` writes from the live demo registry (site root plus every
-demo's canonical extensionless URL, skipped entirely on the `next` channel).
+unreleased-work banner and a `noindex` meta tag into every page, add `X-Robots-Tag: noindex` to the `/*` rule in
+`dist/_headers` (never a second `/*` block - a second one left the next site serving no CSP), and write a disallow-all
+`dist/robots.txt`. Production gets none of that - no banner, no noindex header, and `_headers` stays exactly what Vite's
+`public/` copy produced. Production's `robots.txt` instead allows everything and points crawlers at `dist/sitemap.xml`,
+which `plugins/sitemap.js` writes from the live demo registry (site root plus every demo's canonical extensionless URL,
+skipped entirely on the `next` channel).
