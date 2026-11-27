@@ -206,7 +206,7 @@ function stepGlitchMachine(instance) {
         // The burst just ended: calm the uniforms and roll the wait for the next one.
         if (instance.glitchTicksLeft === 0) {
             resetGlitchUniforms(instance);
-            instance.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+            instance.glitchCooldown = BT.random.intInclusive(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         }
 
         return false;
@@ -218,11 +218,13 @@ function stepGlitchMachine(instance) {
         return false;
     }
 
-    // Roll a new burst: pick() returns one item of the list, int() a whole number in
-    // [min, max), float() a decimal in [min, max). The new seed gives the pixel glitch a
-    // fresh band-noise pattern.
+    // Roll a new burst: pick() returns one item of the list, float() a decimal in
+    // [min, max). The new seed gives the pixel glitch a fresh band-noise pattern.
+    // intInclusive(min, max) returns a whole number where both ends can come up, so a
+    // burst really can last GLITCH_ACTIVE_MAX ticks. Plain int(min, max) would stop one
+    // short: it never returns max itself, which suits array indexes but not "5-30 ticks".
     instance.glitchType = BT.random.pick(GLITCH_TYPES_CHROMA);
-    instance.glitchDuration = BT.random.int(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
+    instance.glitchDuration = BT.random.intInclusive(GLITCH_ACTIVE_MIN, GLITCH_ACTIVE_MAX);
     instance.glitchTicksLeft = instance.glitchDuration;
     instance.glitchPeak = BT.random.float(GLITCH_INTENSITY_MIN, GLITCH_INTENSITY_MAX);
     instance.pixelGlitch.seed = BT.random.float(0, 1000);
