@@ -3,6 +3,7 @@ import { blogMetaSchema, blogPageSchema, metaSchema, pageSchema } from 'fumapres
 import { transformerTwoslash } from 'fumadocs-twoslash';
 import { z } from 'zod';
 import { isTwoslashEnabled, TWOSLASH_COMPILER_OPTIONS } from './scripts/twoslash-config.mjs';
+import { rewriteForMarkdown } from './src/home-markdown';
 
 // Gated in scripts/twoslash-config.mjs: on for CLOUDFLARE or WORKERS_CI (Waku's own
 // adapter-selection vars, so this tracks "is this a Cloudflare build"), with
@@ -16,6 +17,12 @@ import { isTwoslashEnabled, TWOSLASH_COMPILER_OPTIONS } from './scripts/twoslash
 // ~0.6 MB plain, and the dev server retains roughly 2 GB per distinct page visited.
 // Measurements and the resulting usage limits: CLAUDE.md, Twoslash.
 const twoslashEnabled = isTwoslashEnabled();
+
+// The homepage's layout wrappers (see CLAUDE.md, Homepage): their children are the page's real markdown - the
+// headline, the full prompt and the developer line - so the markdown export (llms.txt, markdown negotiation, the MCP
+// server) prints the children without the tags. Manual-sync hazard: the names are the components registered in
+// `press.config.tsx`'s MDX map.
+const UNWRAPPED_IN_MARKDOWN = new Set(['HomeStart', 'PromptBox']);
 
 export default defineConfig({
     mdxOptions: {
@@ -42,7 +49,15 @@ export const docs = defineDocs({
         async: true,
         schema: pageSchema.extend({ lastModified: z.coerce.date().optional() }),
         postprocess: {
-            includeProcessedMarkdown: true,
+            includeProcessedMarkdown: {
+                stringify(node, _parent, state, info) {
+                    if (node.type !== 'mdxJsxFlowElement' || !UNWRAPPED_IN_MARKDOWN.has(node.name ?? '')) {
+                        return undefined;
+                    }
+
+                    return state.containerFlow({ ...node, children: node.children.map(rewriteForMarkdown) }, info);
+                },
+            },
         },
 
         // Explicit include list so content/blog/** is owned solely by the blog

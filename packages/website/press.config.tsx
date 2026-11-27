@@ -14,6 +14,8 @@ import { blogPlugin } from 'fumapress/plugins/blog';
 import { takumiPlugin } from 'fumapress/plugins/takumi';
 import { createRootLayout } from 'fumapress/layouts/root';
 import { createDocsLayoutPage } from 'fumapress/layouts/docs';
+import { createHomeLayoutPage } from 'fumapress/layouts/home';
+import { createLayoutSwitch } from 'fumapress/layouts/switch';
 import { blogPostDateAdapter } from './src/blog-post-date';
 import { CHANNEL_DESCRIPTION, feedPlugin } from './src/feed';
 import { markdownNegotiationPlugin } from './src/markdown-negotiation';
@@ -34,7 +36,9 @@ import { ChannelBanner } from './src/components/channel-banner';
 import { DemoEmbed } from './src/components/demo-embed';
 import { DemoShowcase } from './src/components/demo-showcase';
 import { VideoEmbed } from './src/components/video-embed';
-import { HomeHero } from './src/components/home-hero';
+import { HomeContainer } from './src/components/home-layout';
+import { HomeStart } from './src/components/home-start';
+import { PromptBox } from './src/components/prompt-box';
 import { ApiAvailability } from './src/components/api-availability';
 import { PageChangelog } from './src/components/page-changelog';
 import { Since } from './src/components/since-badge';
@@ -200,6 +204,13 @@ const docsPageLayout = createDocsLayoutPage<DocsLayoutContext>({
         };
     },
 });
+
+/**
+ * The layout for `/` alone: no sidebar, a slim top nav, full-width content (`HomeContainer`). The page still comes
+ * from `content/index.mdx`, so llms.txt, markdown negotiation, the sitemap, the MCP server and the share image read it
+ * like any other page.
+ */
+const homePageLayout = createHomeLayoutPage({ layout: HomeContainer });
 
 /**
  * Global head.
@@ -560,7 +571,8 @@ export default defineConfig({
                     DemoEmbed,
                     DemoShowcase,
                     VideoEmbed,
-                    HomeHero,
+                    HomeStart,
+                    PromptBox,
                     ApiAvailability,
                     PageChangelog,
                     Since,
@@ -590,7 +602,14 @@ export default defineConfig({
             };
         },
 
-        page: async ({ lang, slugs, page }) => {
-            return docsPageLayout({ ...(lang !== undefined && { lang }), slugs, page });
-        },
+        // The detector only gets the page, so the root page is the one with no slugs. `/blog/*` never reaches this:
+        // `blogPlugin` renders it through its own layouts.
+        page: createLayoutSwitch((page) => (page.slugs.length === 0 ? 'home' : 'docs'), {
+            home: async ({ lang, slugs, page }) => {
+                return homePageLayout({ ...(lang !== undefined && { lang }), slugs, page });
+            },
+            docs: async ({ lang, slugs, page }) => {
+                return docsPageLayout({ ...(lang !== undefined && { lang }), slugs, page });
+            },
+        }),
     });

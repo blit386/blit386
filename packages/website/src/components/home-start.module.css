@@ -1,0 +1,187 @@
+@reference '../app.css';
+
+/* Game band and strip (design doc 4.2). */
+
+.band {
+    @apply flex w-full justify-center;
+}
+
+/*
+ * Whole-number scale only, so pixels stay crisp: 2x (640x480) when the window is at least twice the game's height and
+ * wide enough, else 1x. The game page scales its canvas to fill the iframe, so this size is the scale.
+ */
+.game {
+    @apply block border-0;
+
+    width: 320px;
+    height: 240px;
+}
+
+@media (min-width: 640px) and (min-height: 960px) {
+    .game {
+        width: 640px;
+        height: 480px;
+    }
+}
+
+.strip {
+    @apply mx-auto flex max-w-6xl items-center gap-3 border-b-2 border-fd-card px-4 py-3 text-sm text-fd-muted-foreground;
+}
+
+.caption {
+    @apply m-0 flex-1;
+}
+
+.caption strong {
+    @apply text-fd-foreground;
+}
+
+.pager {
+    @apply flex items-center gap-2;
+}
+
+.pager button {
+    @apply cursor-pointer px-1 text-fd-foreground;
+}
+
+.pager .dot {
+    @apply size-2.5 rounded-full border border-fd-foreground p-0;
+}
+
+.pager .dot[aria-current='true'] {
+    @apply bg-fd-foreground;
+}
+
+.ring {
+    @apply size-5 flex-none -rotate-90;
+}
+
+.ringTrack,
+.ringProgress {
+    fill: none;
+    stroke-width: 3;
+}
+
+/* Not `--color-fd-border`: app.css sets it to transparent, so every border here names `fd-card` like the rest of the site. */
+.ringTrack {
+    stroke: var(--color-fd-card);
+}
+
+.ringProgress {
+    stroke: var(--color-fd-foreground);
+    stroke-dasharray: 1;
+    animation: ring-empty 20s linear forwards;
+}
+
+/*
+ * The ring is the clock: pausing it pauses the rolling (WCAG 2.2.2), and with reduced motion nothing rolls at all, so
+ * the ring is hidden. Keyboard focus pauses; a mouse click on an arrow or dot does not, or one skip would stop the band
+ * for good. Hover pauses only where hover is real: a touch browser keeps `:hover` on the last tapped element, which
+ * would freeze the band after one tap. Focus in the game and in the idea field pause through `data-paused` (set in
+ * `home-start-client.tsx`).
+ */
+.showcase:has(:focus-visible) .ringProgress,
+.showcase[data-paused] .ringProgress {
+    animation-play-state: paused;
+}
+
+@media (hover: hover) {
+    .showcase:hover .ringProgress {
+        animation-play-state: paused;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ring {
+        display: none;
+    }
+}
+
+@keyframes ring-empty {
+    to {
+        stroke-dashoffset: 1;
+    }
+}
+
+/* Headline, prompt box and button (design doc 4.3). The MDX children are placed by grid area. */
+
+.intro {
+    @apply mx-auto grid max-w-6xl items-start gap-x-12 gap-y-5 px-4 py-10;
+
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'head' 'sub' 'box' 'copy' 'dev';
+}
+
+@media (min-width: 768px) {
+    .intro {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+        grid-template-areas: 'head box' 'sub box' 'copy box' '. box' 'dev dev';
+    }
+}
+
+/*
+ * The doubled class outranks app.css's `.prose h1` (same specificity otherwise), which the production build loads after
+ * this module, so the size and line height hold there and not only under `waku dev`.
+ */
+.intro.intro > h1 {
+    @apply m-0 text-4xl leading-tight;
+
+    grid-area: head;
+}
+
+.intro > p:first-of-type {
+    @apply m-0 text-lg;
+
+    grid-area: sub;
+}
+
+.intro > p:last-of-type {
+    @apply m-0 border-t-2 border-fd-card pt-5 text-fd-muted-foreground;
+
+    grid-area: dev;
+}
+
+/* No `not-prose` on wrappers in this file: app.css restyles any prose div with a direct `div.not-prose` child as Tabs. */
+.prompt {
+    display: contents;
+}
+
+.copy {
+    @apply cursor-pointer justify-self-start rounded-md bg-fd-primary px-5 py-3 font-semibold text-fd-primary-foreground;
+
+    grid-area: copy;
+}
+
+.box {
+    @apply rounded-md border-2 border-fd-card bg-fd-card p-4;
+
+    grid-area: box;
+}
+
+.promptText {
+    @apply font-mono text-[13px] whitespace-pre-wrap;
+
+    overflow-wrap: anywhere;
+}
+
+.idea {
+    @apply inline-block w-full max-w-[40ch] border-b-2 border-fd-primary bg-transparent font-mono outline-none;
+}
+
+/* Plain CSS, not `outline-2`: `outline-none` above sets Tailwind's outline-style variable to none. */
+.idea:focus-visible {
+    outline: 2px solid var(--color-fd-primary);
+    outline-offset: 2px;
+}
+
+.more {
+    @apply mt-3 cursor-pointer text-sm text-fd-primary underline;
+}
+
+.hint {
+    @apply mt-2 mb-0 text-sm text-fd-muted-foreground;
+}
+
+.manual {
+    @apply mt-3 h-40 w-full rounded border border-fd-card bg-fd-background p-2 font-mono text-xs;
+}

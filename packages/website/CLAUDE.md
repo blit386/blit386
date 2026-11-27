@@ -56,6 +56,7 @@ call, which fails with `eslint: command not found` and is not a real lint result
 | The `ASSETS` binding type and a page's markdown (`core:get-text`), shared by the Worker plugins | `src/plugin-context.ts` |
 | Worker var values (`BLIT386_CHANNEL`, `BLIT386_CSP_REPORT_ONLY`) shared by `scripts/patch-wrangler.mjs` and `src/` | `src/channel-vars.mjs` (plain `.mjs` so the Node script can import it) |
 | The paste-a-prompt text (`/prompt.txt`) and its engine check | `public/prompt.txt`, `scripts/check-chat-prompt.mjs` - see Chat prompt |
+| The homepage layout, first screen, prompt box and example games | `src/components/home-*.tsx`, `src/components/prompt-box*.tsx`, `src/data/chat-prompt.ts`, `src/data/home-examples.ts` - see Homepage |
 
 Seven Fumapress `ServerPlugin`s are local to this package rather than upstream. Six live in `src/`: `cspNoncePlugin`
 (`src/csp-nonce.ts`), `channelHeadersPlugin` (`src/channel-headers.ts`), `markdownNegotiationPlugin`
@@ -153,6 +154,43 @@ ASCII.
 - **After an edit.** Run the proxy test in the release skill's "Re-test the chat prompt" section. The homepage examples
   were made from the old text (design doc 4.2). The kit's `import-a-chat-game` skill reads games built from this
   skeleton, so a change to the canvas id, the `#wrap` markup or the CSS reaches it too (see `packages/kit/CLAUDE.md`).
+
+## Homepage
+
+`/` is `content/index.mdx` like any other page, so llms.txt, markdown negotiation, the sitemap, the MCP server and the
+share image read it with no special case (BT-856, design in `docs/homepage-research/homepage-design.md`). Only its
+layout differs: `page:` in `press.config.tsx` is a `createLayoutSwitch` that sends the page with no slugs to
+`createHomeLayoutPage({ layout: HomeContainer })` and everything else to `docsPageLayout`. `HomeContainer`
+(`src/components/home-layout.tsx`) is fumadocs-ui's `HomeLayout` nav with no sidebar and a full-width content grid; it
+replaces fumapress's own `createHomeLayout`, whose `<main>` is capped at 1400 px. The root page gets no title prefix
+(`scripts/patch-html-title.mjs`), so its frontmatter title carries "BLIT386 - " itself.
+
+- **One prompt source.** `index.mdx` wraps `<include>../public/prompt.txt</include>` in `<PromptBox>`. fumadocs-mdx
+  expands the include into a fenced block before the markdown export runs, and the `stringify` hook on the docs
+  collection's `includeProcessedMarkdown` (`source.config.ts`, `UNWRAPPED_IN_MARKDOWN`) prints `HomeStart` and
+  `PromptBox` as their children alone - the export otherwise keeps every JSX tag - so the page's markdown is plain
+  markdown with the full prompt. `src/home-markdown.ts` (tested) rewrites those children on the way: the headline
+  becomes an h2 under the exporters' own title h1, and the prompt fence loses the file's final newline. `PromptBox` is a
+  server component that drops its children (keeping them out of the browser payload) and renders `PromptBoxClient`,
+  which draws the editable box from `src/data/chat-prompt.ts`, a `?raw` import of the same file. Shown, copied and
+  markdown text are one file; never paste the prompt into the MDX.
+- **The first screen.** `<HomeStart>` (a server component) holds the headline, sub-line, `PromptBox` and developer line
+  as MDX children and places them by CSS grid area (`src/components/home-start.module.css`, keyed on `h1`, the first and
+  last `p`), so keep those four blocks in that order. Its client half (`home-start-client.tsx`) owns the band, the strip
+  and the shared idea state. The countdown ring's 20 s CSS animation is the rolling clock: hover, keyboard focus, focus
+  in the game (a window `blur` listener, plus whether the pointer is over the game, since Firefox reports `<body>` as
+  active during that blur: CSS cannot see focus inside a cross-origin iframe) and the idea field pause it, typing an
+  idea stops it for the visit, and `prefers-reduced-motion` removes it.
+- **Example games are data.** Each is `packages/demos/public/examples/<slug>.html` (the chat app's file, unedited) plus
+  `<slug>.json` (name, idea, app, plan, model, date, prompt version, prompt commit, fill color).
+  `src/data/home-examples.ts` globs the JSON at build time, validates it with zod (a bad file fails the build), and
+  builds the caption; a `promptVersion` other than the prompt's pinned engine version adds "an earlier version of the
+  prompt" and a link to `prompt.txt` at `promptCommit`, the full SHA of a commit holding the exact text the run used
+  (not a release tag: the 1.9.2 tag predates the file). With no files the band and strip are not rendered; with one
+  there is no ring, arrows or dots. The game runs in a sandboxed iframe (the same sandbox as `DemoEmbed`) from
+  demos.blit386.dev, whose `/examples/*` CSP allows jsDelivr (`packages/demos/docs/SECURITY-HEADERS.md`); blit386.dev's
+  own CSP is unchanged. Only runs from a chat app that passed BT-859 belong there, and a new example needs a demos
+  deploy before the website shows it working.
 
 ## Test runners
 

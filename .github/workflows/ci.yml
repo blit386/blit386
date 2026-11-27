@@ -93,6 +93,8 @@ jobs:
               - 'packages/demos/src/*.js'
               - 'packages/demos/plugins/demo-registry.js'
               - 'packages/demos/plugins/demo-order.js'
+              # The homepage's example-game metadata, which src/data/home-examples.ts validates at build time.
+              - 'packages/demos/public/examples/**'
             kit:
               - 'packages/kit/**'
             # Everything the WebGPU-vs-software parity tests (visual-parity below) exercise. All of

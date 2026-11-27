@@ -1,0 +1,18 @@
+@reference '../app.css';
+
+/*
+ * Every MDX block sits in a centered 64rem column, and a block marked `data-full-bleed` (the first screen, set in
+ * `home-start-client.tsx`) spans edge to edge. Side margins, not a grid: grid items never collapse their vertical
+ * margins, which doubled the prose spacing.
+ */
+.home {
+    @apply pb-16;
+}
+
+.home > * {
+    margin-inline: max(1rem, (100% - 64rem) / 2);
+}
+
+.home > [data-full-bleed] {
+    margin-inline: 0;
+}

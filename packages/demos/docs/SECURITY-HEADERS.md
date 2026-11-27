@@ -3,9 +3,10 @@
 Deployed demos are static assets on [demos.blit386.dev](https://demos.blit386.dev/): HTML, JS, sprite PNGs, `.btfont`
 bitmap fonts, the Departure Mono web font (used by the navigation banner), Pragmata Pro for the demo source panel, and
 `.wav` audio clips. HTTP response headers are defined in [`public/_headers`](../public/_headers), one `/*` rule for
-every path (demo pages, `?embed` pages, the `/` sheet, `/shots`, assets), and copied into `dist/` by Vite's `public/`
-copy at build time. Nothing else sets a header: [`wrangler.jsonc`](../wrangler.jsonc) only names the Pages project and
-`dist/`, `vite.config.js` has no header plugin, and the only build-time addition is
+every path (demo pages, `?embed` pages, the `/` sheet, `/shots`, assets) plus one `/examples/*` rule that swaps the CSP
+for the homepage example games (see Example games below), and copied into `dist/` by Vite's `public/` copy at build
+time. Nothing else sets a header: [`wrangler.jsonc`](../wrangler.jsonc) only names the Pages project and `dist/`,
+`vite.config.js` has no header plugin, and the only build-time addition is
 [`plugins/channel-headers.js`](../plugins/channel-headers.js), which appends `X-Robots-Tag: noindex` to `dist/_headers`
 on the `next.demos.blit386.dev` channel (`BLIT386_CHANNEL=next`) and never in production. In production, `/shots` and
 `404.html` stay out of search results through a `<meta name="robots" content="noindex">` tag, not a header; on the next
@@ -61,6 +62,26 @@ The consequence for future work: the moment a demo (or the engine) introduces an
 routes an element through `createMediaElementSource()`, this CSP will silently block it and the demo will be mute with
 only a console CSP violation to explain why. Change `media-src` to `'self'` in [`public/_headers`](../public/_headers)
 in the same change, and update the table above.
+
+### Example games (`/examples/*`)
+
+The blit386.dev homepage band shows example games made by chat apps from the paste-a-prompt (design doc
+`docs/homepage-research/homepage-design.md`, 4.2 and 5). Each is a single HTML file in `public/examples/`, served byte
+for byte so "first try, unedited" stays true, and it imports the engine from `https://cdn.jsdelivr.net`, which the `/*`
+policy does not allow. The `/examples/*` rule therefore detaches that policy with `! Content-Security-Policy` and sets
+its own: the `/*` value with `https://cdn.jsdelivr.net` added to `script-src`. Detaching is the only way to loosen it -
+Cloudflare joins two matching values into two policies, and the browser enforces both. The two CSP lines are kept in
+step by hand; a change to the `/*` policy is copied into the `/examples/*` one. blit386.dev shows each game in an iframe
+with `sandbox="allow-scripts allow-same-origin"`, the same as its demo embeds: the game keeps the demos.blit386.dev
+origin, which is cross-origin to blit386.dev, so it cannot reach the host page. With an opaque origin the games never
+rendered.
+
+Next to each `<slug>.html` sits `<slug>.json` with the metadata the homepage's strip caption is built from; the website
+reads and validates it at build time (`packages/website/src/data/home-examples.ts`). Adding or changing an example needs
+a demos deploy and a website deploy, which the next release tag does. A manual `workflow_dispatch` run of `deploy.yml`
+also does both, but it ships everything on `main` to production, unreleased work included. Check it locally with the
+`wrangler pages dev` recipe below: `curl -sI http://127.0.0.1:8788/examples/<slug>` must show exactly one
+`content-security-policy` line, the one with `https://cdn.jsdelivr.net`.
 
 ### Intentionally not in this pass
 
