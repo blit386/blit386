@@ -469,10 +469,12 @@ class Demo {
         BT.effectAdd(this.pixelGlitch);
         applyCrtChain(this.crtEffects);
 
-        // BT.random is the engine's shared random number generator. Its int() method
-        // returns a whole number from the first value up to (but not including) the
-        // second, so this picks how many ticks to wait before the first glitch burst.
-        this.glitchCooldown = BT.random.int(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
+        // BT.random is the engine's shared random number generator.
+        // intInclusive(min, max) returns a whole number from min up to and including max,
+        // so this waits GLITCH_COOLDOWN_MIN to GLITCH_COOLDOWN_MAX ticks (both included)
+        // before the first glitch burst - the same range every later wait uses. Plain
+        // int(min, max) would never return max itself.
+        this.glitchCooldown = BT.random.intInclusive(GLITCH_COOLDOWN_MIN, GLITCH_COOLDOWN_MAX);
         this.glitchTicksLeft = 0;
         this.glitchDuration = 0;
         this.glitchType = GLITCH_TYPE.NONE;
