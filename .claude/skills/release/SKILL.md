@@ -234,10 +234,10 @@ split across the release PR and a post-tag PR, and the wrong split silently misl
    the repo root (replace `1.5.0` with the target version; the script lives at `scripts/bump-lockstep.mjs` and writes
    `packages/blit386/package.json`, `packages/blit386/src/core/BTAPI.ts`, `packages/kit/package.json` (including its
    derived `blit386.engineRange`), `packages/create-blit386/package.json`, and
-   `packages/create-blit386/src/scaffold.ts`'s derived `BLIT386_RANGE`, and the exact jsDelivr pin in
-   `packages/blit386/docs/guide-single-file.md`, all in one pass). Never suggest separate per-package `npm version`
-   commands, and never bias toward patch or minor - choose SemVer from the pre-bump checklist in `PUBLISHING.md`,
-   anchored to the engine (see guardrail 8).
+   `packages/create-blit386/src/scaffold.ts`'s derived `BLIT386_RANGE`, and the exact jsDelivr pins in
+   `packages/blit386/docs/guide-single-file.md` and the chat prompt `packages/website/public/prompt.txt`, all in one
+   pass). Never suggest separate per-package `npm version` commands, and never bias toward patch or minor - choose
+   SemVer from the pre-bump checklist in `PUBLISHING.md`, anchored to the engine (see guardrail 8).
 5. Release tags carry no `v` prefix (`1.5.0`, not `v1.5.0`). One tag per release - there is exactly one series now.
 6. Publishing is manual-only - no CI publish workflow, no `NPM_TOKEN`. Do not suggest re-adding either.
 7. Every release publishes all three packages, even ones with no changes since the last release. Do not add
@@ -248,8 +248,8 @@ split across the release PR and a post-tag PR, and the wrong split silently misl
 ### How to run the release
 
 1. Bump: `pnpm run bump -- X.Y.Z --dry-run` then `pnpm run bump -- X.Y.Z` from the repo root. Confirm the dry-run output
-   lists all three `package.json` files, the engine's version constants, `engineRange`, `BLIT386_RANGE`, and the
-   jsDelivr pin, then run `pnpm run bump:check` - it must report `Lockstep is in step at X.Y.Z.`
+   lists all three `package.json` files, the engine's version constants, `engineRange`, `BLIT386_RANGE`, and both
+   jsDelivr pins, then run `pnpm run bump:check` - it must report `Lockstep is in step at X.Y.Z.`
 2. Mark the changelog as released (below), verify docs coverage (below), and move `UNRELEASED_VERSION` and regenerate
    `docs/_api-history.json` (below).
 3. Land the bump through a PR: `main` is protected - branch, PR, wait for checks, merge (`gh pr merge --merge`; squash
@@ -264,6 +264,23 @@ split across the release PR and a post-tag PR, and the wrong split silently misl
 6. When the release ships migrations or hot-reload / agent changes, include the extra smoke checks and the
    `blit upgrade` / `blit migrate` callout for existing games from `PUBLISHING.md` step 7.
 7. Fill in the release date in `packages/blit386/docs/_api-history.json` - see below, only after the tag exists.
+8. On a minor or major release, re-test the chat prompt - see below, after the publish (the new pin must be on the CDN).
+
+#### Re-test the chat prompt (minor and major releases)
+
+`packages/website/public/prompt.txt` is the paste-a-prompt text blit386.dev serves at `/prompt.txt` (BT-858). The bump
+moves its pin, and the website's `test:scripts` checks every import and `BT.*` name in it against the built engine, but
+neither shows that a model still writes a working game from it. Once the release is on npm:
+
+1. **Proxy test.** Give a small model (Claude Haiku as a subagent told to use no tools) only the prompt, with the idea
+   line replaced by a game idea it has not seen before. Save its HTML, serve it from a local static server, and play it
+   in a browser: it must load, take input and restart with no console errors. Record the run in
+   `docs/homepage-research/chat-prompt.md` and keep the file in `docs/homepage-research/haiku-test/`.
+2. **Live chat-app test.** Ask the owner to run `docs/homepage-research/live-test-checklist.md` (BT-859) in each chat
+   app the homepage names. It needs their accounts, so an agent cannot run it.
+3. **Homepage examples.** If the prompt text changed since the examples were made, re-run them with the new text, or
+   leave them captioned "made from an earlier version of this prompt" (`docs/homepage-research/homepage-design.md`
+   section 4.2).
 
 #### Mark the changelog as released
 

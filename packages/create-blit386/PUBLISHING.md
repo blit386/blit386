@@ -122,11 +122,11 @@ pnpm run bump -- 1.5.0            # write the lockstep bump
 # equivalent: node scripts/bump-lockstep.mjs 1.5.0
 ```
 
-One command updates seven things in one pass: `packages/blit386/package.json`, `packages/blit386/src/core/BTAPI.ts`'s
+One command updates eight things in one pass: `packages/blit386/package.json`, `packages/blit386/src/core/BTAPI.ts`'s
 `VERSION_MAJOR` / `VERSION_MINOR` / `VERSION_PATCH`, `packages/kit/package.json` (both its own `version` and its derived
 `blit386.engineRange`), `packages/create-blit386/package.json`, `packages/create-blit386/src/scaffold.ts`'s derived
-`BLIT386_RANGE`, and the exact jsDelivr version pinned in `packages/blit386/docs/guide-single-file.md`. None of the
-derived values needs a manual edit - see "Versioning notes".
+`BLIT386_RANGE`, and the exact jsDelivr version pinned in `packages/blit386/docs/guide-single-file.md` and in the chat
+prompt `packages/website/public/prompt.txt`. None of the derived values needs a manual edit - see "Versioning notes".
 
 `create-blit386`'s dependency on the kit is `workspace:*`, so it automatically tracks the kit's new version - no manual
 dependency edit needed.
@@ -280,8 +280,10 @@ publishing the kit publishes the instructions an AI assistant will follow inside
   written into generated projects is read automatically from the kit's own `package.json`.
 - `packages/blit386/docs/guide-single-file.md` pins `https://cdn.jsdelivr.net/npm/blit386@x.y.z/` to the exact lockstep
   version (not a caret range: a pasted single-file game should keep the API it was written against). The bump rewrites
-  every such URL on the page and `pnpm run bump:check` fails while any is stale. jsDelivr mirrors npm on its own, so
-  nothing is published to the CDN; the version exists there once `pnpm publish` has run.
+  every such URL on the page and `pnpm run bump:check` fails while any is stale. The chat prompt blit386.dev serves at
+  `/prompt.txt` (`packages/website/public/prompt.txt`) carries the same pin and gets the same rewrite and check.
+  jsDelivr mirrors npm on its own, so nothing is published to the CDN; the version exists there once `pnpm publish` has
+  run.
 - `packages/kit/package.json` declares `blit386.engineRange`, the engine range the kit's docs describe. `blit doctor`
   compares it against the installed engine via `satisfiesCaretRange()` (`packages/kit/src/env.ts`) and reports drift.
   This is not the same thing as `BLIT386_RANGE`: `engineRange` is checked against an already-installed engine on an
