@@ -39,7 +39,7 @@ const PACKAGE_JSON_PATH = join(ROOT, 'package.json');
  * (it is not yet tagged), so it is a maintained constant: bump it by hand in the same commit
  * that bumps `package.json` `version` after a release ships.
  */
-const UNRELEASED_VERSION = '1.9.2';
+const UNRELEASED_VERSION = '1.9.3';
 
 /**
  * Versions past `UNRELEASED_VERSION` a tag may name on purpose. Each entry is a release already
