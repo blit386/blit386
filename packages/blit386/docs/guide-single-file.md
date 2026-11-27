@@ -206,6 +206,9 @@ come from having no Vite dev server:
 - **Loading files may be blocked.** Sprite sheets, sounds, and fonts load with `fetch`, so they need a URL the page is
   allowed to reach. Inside a chat app's preview a `fetch` to another host is often blocked; draw with primitives and the
   system font there, or embed small files as `data:` URLs.
+- **Gamepads may be blocked.** Some chat-app previews block gamepad access. The game still runs: gamepads read as
+  disconnected, the console shows one warning, and keyboard, mouse, and touch keep working. Save the file and open it in
+  a browser tab to play with a gamepad.
 - **No type checking or tests.** A scaffolded game ships TypeScript (or checked JavaScript), formatting, and a play-test
   harness. One HTML file has none of that.
 

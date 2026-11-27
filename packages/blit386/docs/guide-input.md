@@ -441,6 +441,9 @@ A newly connected gamepad becomes the lowest free player and keeps that player u
 never moves the other players. Chrome can put a lone pad at gamepad index 1 with nothing at index 0; it is still
 player 0. Browsers only report a pad after one of its buttons is pressed while the page has focus.
 
+A page can block gamepad access entirely through its Permissions Policy, as some chat-app previews and embeds do. The
+engine then logs one `[BT]` warning, every player reads as disconnected, and keyboard and pointer input keep working.
+
 Axis constants:
 
 - `AXIS_LEFT_X`, `AXIS_LEFT_Y`

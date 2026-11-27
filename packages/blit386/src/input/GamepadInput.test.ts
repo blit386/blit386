@@ -581,4 +581,55 @@ describe('GamepadInput', () => {
             expect(input.getReleasedMask(-1)).toBe(0);
         });
     });
+
+    describe('blocked by Permissions Policy', () => {
+        function useGetGamepads(getGamepads: () => (Gamepad | null)[]): ReturnType<typeof vi.fn> {
+            const mock = vi.fn(getGamepads);
+            Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { getGamepads: mock } });
+            input.detach();
+            input = new GamepadInput();
+            return mock;
+        }
+
+        it('starts with every player disconnected and warns once when getGamepads throws SecurityError', () => {
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            const getGamepads = useGetGamepads(() => {
+                throw new DOMException('blocked', 'SecurityError');
+            });
+
+            expect(() => input.attach()).not.toThrow();
+            expect(() => {
+                input.endFrame();
+                input.endFrame();
+                input.endFrame();
+            }).not.toThrow();
+
+            for (let player = 0; player < 4; player++) {
+                expect(input.isConnected(player)).toBe(false);
+            }
+            expect(input.connectedCount()).toBe(0);
+            expect(warn).toHaveBeenCalledTimes(1);
+            expect(getGamepads).toHaveBeenCalledTimes(1);
+        });
+
+        it('treats a SecurityError from another realm (not this DOMException class) as blocked', () => {
+            vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            useGetGamepads(() => {
+                throw Object.assign(new Error('blocked'), { name: 'SecurityError' });
+            });
+
+            expect(() => input.attach()).not.toThrow();
+            expect(input.connectedCount()).toBe(0);
+        });
+
+        it('still propagates an error that is not a SecurityError, and polls again next time', () => {
+            const getGamepads = useGetGamepads(() => {
+                throw new TypeError('broken');
+            });
+
+            expect(() => input.attach()).toThrow(TypeError);
+            expect(() => input.endFrame()).toThrow(TypeError);
+            expect(getGamepads).toHaveBeenCalledTimes(2);
+        });
+    });
 });
