@@ -148,6 +148,18 @@ describe('ReducedMotion instance', () => {
         expect(() => reducedMotion.attach(null)).not.toThrow();
     });
 
+    it('warns once and stays detachable when matchMedia returns null (BT-878)', () => {
+        Object.defineProperty(globalThis, 'matchMedia', { configurable: true, value: vi.fn(() => null) });
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const reducedMotion = new ReducedMotion();
+
+        expect(() => reducedMotion.attach(vi.fn())).not.toThrow();
+        expect(warn).toHaveBeenCalledTimes(1);
+        expect(() => reducedMotion.detach()).not.toThrow();
+
+        warn.mockRestore();
+    });
+
     it('installs a change listener on attach', () => {
         const { mql } = installMockMatchMedia();
         const reducedMotion = new ReducedMotion();

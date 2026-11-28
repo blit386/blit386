@@ -30,6 +30,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
   tainted canvas. Images now load with CORS, so a host that sends CORS headers (jsDelivr, GitHub raw) works. An image on
   any other host now fails while it loads, even when the sheet is never drawn, and the error names the image and says to
   send CORS headers, move the image to the page's own site, or embed it as a `data:` URL.
+- A page where `matchMedia` throws or returns `null` no longer shows "Initialization Failed" over a game that keeps
+  running. The game starts with one console warning, later preference changes are not reported, and
+  `BT.isReducedMotionPreferred` reads as not preferred. The game loop now starts only after wake lock, orientation and
+  reduced motion attach, so a failure in any of them can never leave a game running under the error panel.
 
 ## 1.9.2 - 2026-11-27
 
