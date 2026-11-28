@@ -46,9 +46,9 @@ export const SPRITE_CANVAS_CONTEXT_UNAVAILABLE_MESSAGE =
  */
 export function spriteImageFromOtherSiteError(src: string): string {
     return (
-        `The browser won't let the engine read the pixels of the image ${src}, because it comes from another site` +
-        ' that does not allow it. Ask that site to send CORS headers (Access-Control-Allow-Origin),' +
-        " or put the image on your page's own site, or embed it as a data: URL"
+        `The browser won't let the engine read the pixels of ${src}, an image on another site, which must send CORS` +
+        " headers (Access-Control-Allow-Origin). Otherwise put the image on your page's own site," +
+        ' or embed it as a data: URL'
     );
 }
 

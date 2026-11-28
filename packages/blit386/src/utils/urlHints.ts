@@ -40,15 +40,13 @@ const OPAQUE_ORIGIN = 'null';
 
 /** Hint for an image on another site than the page. */
 const OTHER_SITE_IMAGE_HINT =
-    'If the address is right, this image is on another site, and that site must send CORS headers' +
-    " (Access-Control-Allow-Origin) before the engine can read it. Otherwise put the image on your page's own site," +
-    ' or embed it as a data: URL';
+    'If the address is right, this image is on another site, which must send CORS headers' +
+    " (Access-Control-Allow-Origin). Otherwise put the image on your page's own site, or embed it as a data: URL";
 
 /** Hint for an image loaded by a page with no origin of its own. */
 const OPAQUE_ORIGIN_IMAGE_HINT =
-    'This page has no web address of its own (it was opened from a file, or runs in a sandboxed frame),' +
-    ' so the browser only lets the engine read images sent with CORS headers (Access-Control-Allow-Origin).' +
-    ' Serve the page from a local web server, or embed the image as a data: URL';
+    'This page has no web address of its own (opened from a file, or in a sandboxed frame).' +
+    ' Serve it from a local web server, or embed the image as a data: URL';
 
 /**
  * Builds the CORS hint for an image that failed to load. The engine loads every image with CORS because it reads
