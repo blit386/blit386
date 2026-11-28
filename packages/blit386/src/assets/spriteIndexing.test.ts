@@ -58,3 +58,59 @@ describe('readRgbaPixels without a 2D context', () => {
         expect(() => readRgbaPixels({} as HTMLImageElement, 2, 2)).toThrow(/canvas/);
     });
 });
+
+describe('readRgbaPixels on an image the browser will not let it read', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    /**
+     * Stubs OffscreenCanvas so `getImageData` throws the given error.
+     *
+     * @param error - Error `getImageData` throws.
+     */
+    function stubGetImageDataThrowing(error: unknown): void {
+        vi.stubGlobal(
+            'OffscreenCanvas',
+            class {
+                public getContext(): unknown {
+                    return {
+                        imageSmoothingEnabled: true,
+                        drawImage: () => {},
+                        getImageData: () => {
+                            throw error;
+                        },
+                    };
+                }
+            },
+        );
+    }
+
+    it('should name the image and say how to fix a cross-origin SecurityError', () => {
+        const securityError = new DOMException('x', 'SecurityError');
+        stubGetImageDataThrowing(securityError);
+        const image = { src: 'http://127.0.0.1:5200/sheet.png' } as HTMLImageElement;
+
+        let thrown: unknown;
+
+        try {
+            readRgbaPixels(image, 2, 2);
+        } catch (error) {
+            thrown = error;
+        }
+
+        expect(thrown).toBeInstanceOf(Error);
+        expect(thrown).not.toBe(securityError);
+        expect((thrown as Error).message).toContain('http://127.0.0.1:5200/sheet.png');
+        expect((thrown as Error).message).toContain('CORS');
+        expect((thrown as Error).message).toContain('data:');
+        expect((thrown as Error).cause).toBe(securityError);
+    });
+
+    it('should rethrow any other getImageData error unchanged', () => {
+        const otherError = new DOMException('x', 'IndexSizeError');
+        stubGetImageDataThrowing(otherError);
+
+        expect(() => readRgbaPixels({ src: 'sheet.png' } as HTMLImageElement, 2, 2)).toThrow(otherError);
+    });
+});

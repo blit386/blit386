@@ -7,7 +7,8 @@
  * equivalent URLs (relative vs. rooted, or a `blit386:asset-changed` payload URL
  * that formats a path differently than a demo's original load call).
  *
- * {@link resolveAgainstDocument} is also used outside hot reload, by the `.btfont` texture origin check.
+ * {@link resolveAgainstDocument} is also used outside hot reload, by the `.btfont` texture origin check and the CORS
+ * hint for images that fail to load (`buildCorsImageHint` in `urlHints`).
  */
 
 /**

@@ -148,4 +148,8 @@ Cells that are not square take a `Vector2i`: `{ tileSize: new Vector2i(16, 24) }
   Vite plugin). If the image size changed, recompute any `srcRect` you cached. For a loading UI, see the
   show-a-loading-screen skill (`BT.loadingAssetsCount`, `sheet.status`, `sheet.progress`).
 
+- Keep sprite PNGs in the game's own folder (`public/`) or embed them as `data:` URLs. A PNG from another site loads
+  only when that site sends CORS headers (`Access-Control-Allow-Origin`); otherwise the game stops at start with an
+  error naming the image.
+
 See `docs/drawing.md`.

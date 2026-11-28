@@ -26,6 +26,10 @@ notes, including dependency bumps and CI changes omitted here for brevity.
 - A game now starts in a page that blocks gamepad access, such as the Claude.ai artifact preview. Its Permissions Policy
   made `navigator.getGamepads()` throw, and the engine stopped at init with "Initialization Failed". Gamepads now read
   as disconnected, one console warning says why, and keyboard and pointer keep working.
+- A sprite sheet or font image from another site than the page no longer stops the game with a raw browser error about a
+  tainted canvas. Images now load with CORS, so a host that sends CORS headers (jsDelivr, GitHub raw) works. An image on
+  any other host now fails while it loads, even when the sheet is never drawn, and the error names the image and says to
+  send CORS headers, move the image to the page's own site, or embed it as a `data:` URL.
 
 ## 1.9.2 - 2026-11-27
 
