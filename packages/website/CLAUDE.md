@@ -57,6 +57,7 @@ call, which fails with `eslint: command not found` and is not a real lint result
 | Worker var values (`BLIT386_CHANNEL`, `BLIT386_CSP_REPORT_ONLY`) shared by `scripts/patch-wrangler.mjs` and `src/` | `src/channel-vars.mjs` (plain `.mjs` so the Node script can import it) |
 | The paste-a-prompt text (`/prompt.txt`) and its engine check | `public/prompt.txt`, `scripts/check-chat-prompt.mjs` - see Chat prompt |
 | The homepage layout, first screen, prompt box and example games | `src/components/home-*.tsx`, `src/components/prompt-box*.tsx`, `src/data/chat-prompt.ts`, `src/data/home-examples.ts` - see Homepage |
+| The Plausible copy event and reading jsDelivr downloads | `src/data/prompt-copy.ts` - see Analytics |
 
 Seven Fumapress `ServerPlugin`s are local to this package rather than upstream. Six live in `src/`: `cspNoncePlugin`
 (`src/csp-nonce.ts`), `channelHeadersPlugin` (`src/channel-headers.ts`), `markdownNegotiationPlugin`
@@ -192,6 +193,23 @@ replaces fumapress's own `createHomeLayout`, whose `<main>` is capped at 1400 px
   own CSP is unchanged. Only runs from a chat app that passed BT-859 belong there, and a new example needs a demos
   deploy before the website shows it working.
 
+## Analytics
+
+Plausible is the only analytics (no cookies, so no banner). `press.config.tsx` loads its script and the inline
+`window.plausible` queue stub in the global head; the stub is an ordinary `<script>`, so `cspNoncePlugin` stamps it like
+any other. On its own the script records page views, `engagement`, outbound clicks, form submissions and file downloads
+(the options baked into the `pa-` script). The one custom event is the homepage's "Copy the prompt" button (BT-860):
+`src/data/prompt-copy.ts` (tested) sends `PROMPT_COPY_EVENT` with `idea: edited | example | placeholder` (`placeholder`
+only when no example game is shown) after the clipboard write succeeds, or when the visitor copies from the manual
+Ctrl+C fallback box (its `copy` event). The copy works the same when a blocker removes Plausible. The event shows in the
+dashboard only once a custom-event goal with that exact name exists in Plausible's site settings; the `idea` property
+needs no setup.
+
+jsDelivr downloads stand in for chat-made games actually running (they load the engine from the CDN):
+`curl -s https://data.jsdelivr.com/v1/stats/packages/npm/blit386 | jq .hits.total` is the last month's hits
+(`.hits.dates` has them per day); add `?period=week` (or `day`, `year`) for another window, and `/versions` before the
+query for hits per version.
+
 ## Test runners
 
 Two, deliberately, matching the split `packages/blit386` already runs:
@@ -199,7 +217,7 @@ Two, deliberately, matching the split `packages/blit386` already runs:
 | Suite | Runner | Script | Covers |
 | --- | --- | --- | --- |
 | `scripts/__tests__/*.test.mjs` | `node --test` | `test:scripts` | The build and sync scripts |
-| `src/**/*.test.ts` | Vitest | `test:unit` | The `ServerPlugin`s that run in the deployed Worker, plus `public/webmcp.js` |
+| `src/**/*.test.ts` | Vitest | `test:unit` | The `ServerPlugin`s that run in the deployed Worker, the `src/data/` modules with logic (including the browser-side `prompt-copy.ts`), plus `public/webmcp.js` |
 
 `pnpm run test` runs both, the second with coverage; `preflight` and the `quality-website` CI job call it, so neither
 needs its own wiring. The `scripts/**` suite stays on `node --test` because it is `node:assert` throughout, it finishes
