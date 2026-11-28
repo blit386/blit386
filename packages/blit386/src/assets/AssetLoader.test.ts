@@ -549,3 +549,68 @@ describe('AssetLoader', () => {
         });
     });
 });
+
+describe('AssetLoader cross-origin images', () => {
+    /** Image stub whose `onload`/`onerror` must be fired manually. */
+    class CorsImage {
+        onload: (() => void) | null = null;
+        onerror: (() => void) | null = null;
+        width = 16;
+        height = 16;
+        src = '';
+        crossOrigin: string | null = null;
+    }
+
+    let instances: CorsImage[];
+
+    beforeEach(() => {
+        instances = [];
+
+        vi.stubGlobal(
+            'Image',
+            class extends CorsImage {
+                constructor() {
+                    super();
+                    instances.push(this);
+                }
+            },
+        );
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('should request every image with CORS so a CORS-enabled host does not taint the canvas', async () => {
+        const promise = AssetLoader.loadImage('https://cdn.example.com/sheet.png');
+
+        expect(instances[0]?.crossOrigin).toBe('anonymous');
+
+        instances[0]?.onload?.();
+        await promise;
+    });
+
+    it('should hint at CORS when an image on another site fails to load', async () => {
+        const promise = AssetLoader.loadImage('https://cdn.example.com/sheet.png');
+
+        instances[0]?.onerror?.();
+
+        await expect(promise).rejects.toThrow(/another site.*CORS/);
+    });
+
+    it('should not hint at CORS when a same-site image fails to load', async () => {
+        const promise = AssetLoader.loadImage('/sprites/missing.png');
+
+        instances[0]?.onerror?.();
+
+        await expect(promise).rejects.not.toThrow(/CORS/);
+    });
+
+    it('should still reject when the failing image URL does not parse', async () => {
+        const promise = AssetLoader.loadImage('http://localhost:99999/sheet.png');
+
+        instances[0]?.onerror?.();
+
+        await expect(promise).rejects.toThrow(/Can't find the image/);
+    });
+});

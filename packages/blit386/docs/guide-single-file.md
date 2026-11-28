@@ -206,6 +206,10 @@ come from having no Vite dev server:
 - **Loading files may be blocked.** Sprite sheets, sounds, and fonts load with `fetch`, so they need a URL the page is
   allowed to reach. Inside a chat app's preview a `fetch` to another host is often blocked; draw with primitives and the
   system font there, or embed small files as `data:` URLs.
+- **Images from another site need CORS.** The engine reads every sprite sheet's pixels to match them to the palette, so
+  an image on another host than the page loads only when that host sends CORS headers (`Access-Control-Allow-Origin`).
+  jsDelivr does. Otherwise keep the image on the page's own site or embed it as a `data:` URL; the game stops at start
+  with a message naming the image and both fixes.
 - **Gamepads may be blocked.** Some chat-app previews block gamepad access. The game still runs: gamepads read as
   disconnected, the console shows one warning, and keyboard, mouse, and touch keep working. Save the file and open it in
   a browser tab to play with a gamepad.

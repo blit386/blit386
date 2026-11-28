@@ -38,6 +38,21 @@ export const SPRITE_CANVAS_CONTEXT_UNAVAILABLE_MESSAGE =
     ' Close unused canvases or allow canvas access for this page, then load the sprite again.';
 
 /**
+ * Returns the error message shown when the browser refuses to let the engine read an image's pixels because the image
+ * came from another site without CORS permission (a tainted canvas).
+ *
+ * @param src - Source image label from `sourceLabel` (the quoted URL, or `(unnamed)`).
+ * @returns User-facing error string.
+ */
+export function spriteImageFromOtherSiteError(src: string): string {
+    return (
+        `The browser won't let the engine read the pixels of ${src}, an image on another site, which must send CORS` +
+        " headers (Access-Control-Allow-Origin). Otherwise put the image on your page's own site," +
+        ' or embed it as a data: URL'
+    );
+}
+
+/**
  * Error message shown when a tile is looked up by grid position on
  * a sprite sheet that has no tile size.
  */

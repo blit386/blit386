@@ -18,7 +18,7 @@ import {
 import { btfontGlyphEntryNotObjectError } from '../utils/errorMessages';
 import { appendCacheBustQuery, resolveAgainstDocument } from '../utils/HotReloadUrl';
 import { Rect2i } from '../utils/Rect2i';
-import { buildPathHint, extractExtension } from '../utils/urlHints';
+import { buildCorsImageHint, buildPathHint, extractExtension } from '../utils/urlHints';
 import type { Glyph } from './BitmapFont';
 import { readStreamedBody } from './readStreamedBody';
 import { DOWNLOAD_TIMEOUT_MS } from './stallTimeout';
@@ -493,15 +493,19 @@ function loadImage(src: string): Promise<HTMLImageElement> {
         image.onerror = () => {
             // Maximum characters shown from a texture source string in load-failure messages.
             const maxErrorURLDisplayChars = 50;
+            const corsHint = buildCorsImageHint(src);
 
             return reject(
                 new Error(
                     `Can't find the font texture image '${src.substring(0, maxErrorURLDisplayChars)}'. ` +
-                        'Check for typos, wrong letter casing, or a missing file extension.',
+                        'Check for typos, wrong letter casing, or a missing file extension.' +
+                        (corsHint === '' ? '' : ` ${corsHint}`),
                 ),
             );
         };
 
+        // Same CORS request as AssetLoader: the atlas is indexed by reading its pixels.
+        image.crossOrigin = 'anonymous';
         image.src = src;
     });
 }

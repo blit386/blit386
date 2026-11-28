@@ -115,6 +115,13 @@ number as the fourth argument, is the fast path, which draws at a point - a dev 
 already fixes the size, so `scale` must be `1` and `pivot` must be unset - set `params.pivot = undefined` on a reused
 options object before stretching. See the `add-sprite` skill.
 
+## A sprite from another site will not load
+
+The engine reads each sprite's pixels to match them to the palette, and the browser allows that for an image from
+another site only when that site sends CORS headers (`Access-Control-Allow-Origin`). Without them the game stops at
+start, and the error names the image. Copy the PNG into your project's `public/` folder and load it by its own path
+(`/sprites/hero.png`), or embed it as a `data:` URL. Fonts follow the same rule.
+
 ## A palette fade runs at the wrong speed, or a color I set in `render()` keeps snapping back
 
 Palette effects (`paletteCycle`, the fades, `paletteFlash`) move once per `update()` step, right after yours, on the

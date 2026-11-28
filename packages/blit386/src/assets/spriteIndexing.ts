@@ -8,7 +8,11 @@
 import { markIndexUsed } from '../core/RenderPaletteUsage';
 import { assertDimensions } from '../utils/AssetLimits';
 import { Color32 } from '../utils/Color32';
-import { SPRITE_CANVAS_CONTEXT_UNAVAILABLE_MESSAGE, spriteColorNotInPaletteError } from '../utils/errorMessages';
+import {
+    SPRITE_CANVAS_CONTEXT_UNAVAILABLE_MESSAGE,
+    spriteColorNotInPaletteError,
+    spriteImageFromOtherSiteError,
+} from '../utils/errorMessages';
 import type { Rect2i } from '../utils/Rect2i';
 import type { Palette } from './Palette';
 import { MAX_PALETTE_SIZE, TRANSPARENT_PALETTE_INDEX } from './Palette';
@@ -324,7 +328,8 @@ export function markUniqueIndicesInRect(
  * @param w - Image width in pixels.
  * @param h - Image height in pixels.
  * @returns Flat RGBA byte array (`w * h * RGBA_BYTES_PER_PIXEL` bytes).
- * @throws Error if the browser returns no 2D canvas context.
+ * @throws Error if the browser returns no 2D canvas context, or if the image came from another site without CORS
+ *   permission (the browser's `SecurityError`, rewrapped with the image URL and the fix).
  */
 export function readRgbaPixels(image: HTMLImageElement, w: number, h: number): Uint8Array<ArrayBuffer> {
     const canvas = new OffscreenCanvas(w, h);
@@ -337,8 +342,21 @@ export function readRgbaPixels(image: HTMLImageElement, w: number, h: number): U
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(image, 0, 0);
 
+    let imageData: ImageData;
+
+    try {
+        imageData = ctx.getImageData(0, 0, w, h);
+    } catch (error) {
+        // A cross-origin image loaded without CORS taints the canvas; the raw browser error names neither cause nor fix.
+        if (error instanceof DOMException && error.name === 'SecurityError') {
+            throw new Error(spriteImageFromOtherSiteError(sourceLabel(image)), { cause: error });
+        }
+
+        throw error;
+    }
+
     // getImageData returns a fresh buffer, so wrapping it needs no copy.
-    return new Uint8Array(ctx.getImageData(0, 0, w, h).data.buffer) as Uint8Array<ArrayBuffer>;
+    return new Uint8Array(imageData.data.buffer) as Uint8Array<ArrayBuffer>;
 }
 
 /**

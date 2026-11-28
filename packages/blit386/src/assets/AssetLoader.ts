@@ -1,6 +1,6 @@
 import { assertImageElementWithinLimits } from '../utils/AssetLimits';
 import { appendCacheBustQuery, normalizeAssetUrl } from '../utils/HotReloadUrl';
-import { buildPathHint, extractExtension } from '../utils/urlHints';
+import { buildCorsImageHint, buildPathHint, extractExtension } from '../utils/urlHints';
 
 /**
  * Successfully loaded images keyed by request URL.
@@ -49,9 +49,11 @@ function buildExtensionHint(extension: string): string {
  * @returns Extra hint text (or empty string when no hint applies).
  */
 function buildImageHints(url: string): string {
-    const hints = [buildPathHint(url, 'images'), buildExtensionHint(extractExtension(url))].filter(
-        (hint) => hint !== '',
-    );
+    const hints = [
+        buildPathHint(url, 'images'),
+        buildExtensionHint(extractExtension(url)),
+        buildCorsImageHint(url),
+    ].filter((hint) => hint !== '');
 
     return hints.length > 0 ? ` ${hints.join(' ')}` : '';
 }
@@ -167,6 +169,8 @@ function startLoading(fetchUrl: string, cacheKey: string = fetchUrl): Promise<HT
             reject(buildImageNotFoundError(cacheKey));
         };
 
+        // The engine reads every image's pixels, and a cross-origin image loaded without CORS taints the canvas.
+        img.crossOrigin = 'anonymous';
         img.src = fetchUrl;
     });
 

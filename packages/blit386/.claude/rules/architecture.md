@@ -157,7 +157,7 @@ src/
     RenderLimits.ts        # Render dimension validation (8192 px per axis; 16,777,216 total pixels)
     AssetLimits.ts         # Asset dimension validation, btfont/glyph limits, sprite-blit clipping
     TileGrid.ts            # Tile size / coordinate validation shared by Rect2i.fromTile and the SpriteSheet tile grid (spriteTileGrid.ts)
-    HotReloadUrl.ts        # Cache-bust/normalize URL helpers (appendCacheBustQuery, normalizeAssetUrl) for the dev-only asset hot-replace path; used by AssetLoader, SpriteSheet, AudioClip, BitmapFont. resolveAgainstDocument also backs the .btfont texture origin check in AssetLimits
+    HotReloadUrl.ts        # Cache-bust/normalize URL helpers (appendCacheBustQuery, normalizeAssetUrl) for the dev-only asset hot-replace path; used by AssetLoader, SpriteSheet, AudioClip, BitmapFont. resolveAgainstDocument also backs the .btfont texture origin check in AssetLimits and the CORS hint in urlHints (buildCorsImageHint)
     devMode.ts             # Dev vs. release build detection (resolveDevMode pure resolver + isDevMode reader); backs BT.isDevMode
     Vector2i.ts            # Integer 2D vector (allocating methods, statics, normalized, equality)
     Vector2iOps.ts         # Internal base of Vector2i: *To / *InPlace families, set/copyFrom, magnitude and distance queries (not exported)
@@ -179,7 +179,7 @@ src/
     globalExpose.ts        # Exposes BT on window for console debugging (dev-only by default; BootstrapOptions.exposeGlobal overrides)
     Timer.ts               # Elapsed-time helper (exported; Timer.fireIfElapsed)
     errorMessages/         # Centralized user-facing error strings (two-tier voice), one file per domain (asset, audio, bootstrap, btfont, math, palette, random, render, sprite, synth) behind an index.ts barrel, plus vite.ts outside it (only src/vite/options.ts imports it, directly); fixed text is an X_MESSAGE const, parameterized text an xError(...) builder
-    urlHints.ts            # Shared "can't find this file" URL hint helpers (hasExplicitLocation, buildPathHint, extractExtension); used by BitmapFont and AudioClip error builders
+    urlHints.ts            # Shared "can't find this file" URL hint helpers (hasExplicitLocation, buildPathHint, extractExtension, buildCorsImageHint); used by AssetLoader, BitmapFont and AudioClip error builders
   __test__/
     webgpu-mock.ts         # WebGPU mock factories for tests
     bresenham.ts           # Reference Bresenham walk (walkBresenham) for the line-clipping tests

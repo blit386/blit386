@@ -7,6 +7,8 @@
  * extension-parsing logic are defined once instead of duplicated per asset type.
  */
 
+import { resolveAgainstDocument } from './HotReloadUrl';
+
 /** URL scheme prefixes that already point at an explicit location. */
 const EXPLICIT_URL_SCHEME_PREFIXES = ['//', 'data:', 'blob:'] as const;
 
@@ -28,6 +30,50 @@ export function hasExplicitLocation(url: string): boolean {
         EXPLICIT_URL_SCHEME_PREFIXES.some((prefix) => lowerUrl.startsWith(prefix)) ||
         EXPLICIT_PATH_PREFIXES.some((prefix) => url.startsWith(prefix))
     );
+}
+
+/** Image URL schemes the browser loads under CORS rules (`data:` and `blob:` never need CORS). */
+const CORS_IMAGE_PROTOCOLS: ReadonlySet<string> = new Set(['http:', 'https:', 'file:']);
+
+/** Serialized origin of a page opened from a file or running in a sandboxed frame. */
+const OPAQUE_ORIGIN = 'null';
+
+/** Hint for an image on another site than the page. */
+const OTHER_SITE_IMAGE_HINT =
+    'If the address is right, this image is on another site, which must send CORS headers' +
+    " (Access-Control-Allow-Origin). Otherwise put the image on your page's own site, or embed it as a data: URL";
+
+/** Hint for an image loaded by a page with no origin of its own. */
+const OPAQUE_ORIGIN_IMAGE_HINT =
+    'This page has no web address of its own (opened from a file, or in a sandboxed frame).' +
+    ' Serve it from a local web server, or embed the image as a data: URL';
+
+/**
+ * Builds the CORS hint for an image that failed to load. The engine loads every image with CORS because it reads
+ * their pixels, so an image on another site, or any image on a page with no origin, fails unless CORS allows it.
+ *
+ * @param url - Failing image path or URL.
+ * @returns Hint text, or an empty string when CORS cannot be the cause (same site, `data:`, `blob:`, or a URL that
+ *   does not parse, which the base message already covers).
+ */
+export function buildCorsImageHint(url: string): string {
+    let imageUrl: URL;
+
+    try {
+        imageUrl = resolveAgainstDocument(url);
+    } catch {
+        return '';
+    }
+
+    if (!CORS_IMAGE_PROTOCOLS.has(imageUrl.protocol)) {
+        return '';
+    }
+
+    if (globalThis.origin === OPAQUE_ORIGIN) {
+        return OPAQUE_ORIGIN_IMAGE_HINT;
+    }
+
+    return imageUrl.origin === resolveAgainstDocument('/').origin ? '' : OTHER_SITE_IMAGE_HINT;
 }
 
 /**

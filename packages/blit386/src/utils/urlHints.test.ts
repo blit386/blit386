@@ -2,9 +2,9 @@
  * Unit tests for {@link extractExtension}.
  */
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { extractExtension } from './urlHints';
+import { buildCorsImageHint, extractExtension } from './urlHints';
 
 describe('extractExtension', () => {
     it('should return the lowercase extension with its dot', () => {
@@ -21,5 +21,35 @@ describe('extractExtension', () => {
 
     it('should ignore a fragment', () => {
         expect(extractExtension('a.png#frag/x')).toBe('.png');
+    });
+});
+
+describe('buildCorsImageHint', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals();
+    });
+
+    it('should hint at CORS for an image on another site', () => {
+        expect(buildCorsImageHint('https://cdn.example.com/sheet.png')).toMatch(/another site.*CORS/);
+    });
+
+    it("should not hint for an image on the page's own site", () => {
+        expect(buildCorsImageHint('/sprites/sheet.png')).toBe('');
+    });
+
+    it('should not hint for data: and blob: URLs, which never need CORS', () => {
+        expect(buildCorsImageHint('data:image/png;base64,AAAA')).toBe('');
+        expect(buildCorsImageHint('blob:http://localhost/1234')).toBe('');
+    });
+
+    it('should return no hint instead of throwing for a URL that does not parse', () => {
+        expect(buildCorsImageHint('http://')).toBe('');
+        expect(buildCorsImageHint('http://localhost:99999/sheet.png')).toBe('');
+    });
+
+    it('should explain the missing origin on a page opened from a file or a sandboxed frame', () => {
+        vi.stubGlobal('origin', 'null');
+
+        expect(buildCorsImageHint('./sheet.png')).toMatch(/no web address of its own.*local web server/);
     });
 });
