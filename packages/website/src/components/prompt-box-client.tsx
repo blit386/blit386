@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { CHAT_PROMPT, withIdea } from '../data/chat-prompt';
+import { copyPrompt, IDEA_EDITED, ideaSource, trackPromptCopy } from '../data/prompt-copy';
 import { useHomeStart } from './home-start-client';
 import styles from './home-start.module.css';
 
@@ -23,7 +24,8 @@ export function PromptBoxClient() {
     const manualRef = useRef<HTMLTextAreaElement>(null);
 
     // Copying without typing keeps the example's idea, so the paste still makes a game.
-    const text = withIdea(CHAT_PROMPT, idea.trim() === '' ? (example?.idea ?? '') : idea);
+    const source = ideaSource(idea, example?.idea);
+    const text = withIdea(CHAT_PROMPT, source === IDEA_EDITED ? idea : (example?.idea ?? ''));
     const fieldValue = ideaFocused || touched ? idea : (example?.idea ?? '');
 
     useEffect(() => {
@@ -41,7 +43,7 @@ export function PromptBoxClient() {
 
     const copy = async () => {
         try {
-            await navigator.clipboard.writeText(text);
+            await copyPrompt(text, source);
             setCopyState('copied');
         } catch {
             // No Clipboard API, or the browser refused: hand the visitor selected text instead of failing silently.
@@ -83,7 +85,14 @@ export function PromptBoxClient() {
                 <p className={styles.hint}>Click the idea to write your own.</p>
 
                 {copyState === 'manual' && (
-                    <textarea ref={manualRef} className={styles.manual} value={text} readOnly aria-label="The prompt" />
+                    <textarea
+                        ref={manualRef}
+                        className={styles.manual}
+                        value={text}
+                        readOnly
+                        aria-label="The prompt"
+                        onCopy={() => trackPromptCopy(source)}
+                    />
                 )}
             </div>
 

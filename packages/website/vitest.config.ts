@@ -33,6 +33,7 @@ export default defineConfig({
                 'src/data/api-history.ts',
                 'src/data/chat-prompt.ts',
                 'src/data/home-examples.ts',
+                'src/data/prompt-copy.ts',
                 'public/webmcp.js',
             ],
             exclude: ['src/**/*.test.ts', 'src/__test__/**', 'src/css-modules.d.ts', 'src/raw-imports.d.ts'],
