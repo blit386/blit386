@@ -342,8 +342,8 @@ export class Lifecycle {
             return false;
         }
 
-        // Start the loop. The GameLoop's double-RAF delay ensures the canvas is
-        // fully ready before the first tick.
+        // Build the loop; it starts below, after the optional subsystems. The GameLoop's
+        // double-RAF delay ensures the canvas is fully ready before the first tick.
         const isFrameDropCallbackNeeded =
             hwSettings.isDetectingDroppedFrames === true || hwSettings.isOverlayTimingChartEnabled === true;
         const onFrameDrop: FrameDropCallback | undefined = isFrameDropCallbackNeeded
@@ -366,8 +366,8 @@ export class Lifecycle {
             onFrameDrop,
         );
 
-        this.engine.loop.start();
-
+        // Optional subsystems attach before the loop starts, so a throw in one can never leave a
+        // running game under the Initialization Failed panel. None of them needs the loop.
         this.wakeLock?.detach();
         this.wakeLock = null;
 
@@ -384,6 +384,8 @@ export class Lifecycle {
         );
 
         this.engine.subsystems.attachReducedMotion();
+
+        this.engine.loop.start();
 
         console.log('[BT] Initialization complete');
 

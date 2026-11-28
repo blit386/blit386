@@ -168,7 +168,9 @@ export class ReducedMotion {
     /**
      * Installs the `change` listener on the platform media query.
      *
-     * No-ops when `matchMedia` is unavailable.
+     * No-ops when `matchMedia` is unavailable. Never throws: when `matchMedia` throws or
+     * returns `null` (a sandboxed or hidden iframe), it warns once and watches nothing, so init
+     * still succeeds and later changes are simply not reported.
      *
      * @param onChange - Optional demo callback for subsequent preference changes.
      */
@@ -179,8 +181,16 @@ export class ReducedMotion {
 
         this.onChange = onChange;
         this.lastNotified = ReducedMotion.isPreferred;
-        this.mediaQueryList = globalThis.matchMedia(MEDIA_QUERY);
-        this.mediaQueryList.addEventListener('change', this.handleChange);
+
+        try {
+            const mediaQueryList = globalThis.matchMedia(MEDIA_QUERY);
+
+            // A null return (older Firefox in a hidden iframe) throws a TypeError here, caught below.
+            mediaQueryList.addEventListener('change', this.handleChange);
+            this.mediaQueryList = mediaQueryList;
+        } catch (error) {
+            console.warn('[BT] matchMedia failed:', error);
+        }
     }
 
     /**

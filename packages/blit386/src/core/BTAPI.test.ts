@@ -552,6 +552,25 @@ describe('BTAPI', () => {
             expect(isRunning(secondLoop)).toBe(true);
         });
 
+        it('should still init and run the loop when matchMedia throws (BT-878)', async () => {
+            vi.stubGlobal(
+                'matchMedia',
+                vi.fn(() => {
+                    throw new Error('matchMedia blocked');
+                }),
+            );
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+            expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
+
+            const loop = (BTAPI.instance as unknown as { loop: GameLoop | null }).loop;
+
+            expect((loop as unknown as { isRunning: boolean } | null)?.isRunning).toBe(true);
+            expect(warn).toHaveBeenCalledTimes(1);
+
+            warn.mockRestore();
+        });
+
         it('should destroy the first GPU device when a second init runs', async () => {
             expect(await BTAPI.instance.init(makeMockDemo(), makeMockCanvas())).toBe(true);
 
